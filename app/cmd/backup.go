@@ -137,7 +137,8 @@ func checkBackupStatus(c *cli.Context) error {
 				continue
 			}
 
-			repClient, err := replicaClient.NewReplicaClient(replica.Address)
+			volumeName := c.GlobalString("volume-name")
+			repClient, err := replicaClient.NewReplicaClient(replica.Address, volumeName)
 			if err != nil {
 				logrus.WithError(err).Errorf("Cannot create a replica client for IP[%v]", replicaAddress)
 				return err
@@ -161,7 +162,8 @@ func checkBackupStatus(c *cli.Context) error {
 			replicaAddress, backupID, "unknown replica")
 	}
 
-	repClient, err := replicaClient.NewReplicaClient(replicaAddress)
+	volumeName := c.GlobalString("volume-name")
+	repClient, err := replicaClient.NewReplicaClient(replicaAddress, volumeName)
 	if err != nil {
 		logrus.WithError(err).Errorf("Cannot create a replica client for IP[%v]", replicaAddress)
 		return err
@@ -256,9 +258,10 @@ func createBackup(c *cli.Context) error {
 	}
 
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}
@@ -279,9 +282,10 @@ func createBackup(c *cli.Context) error {
 
 func restoreBackup(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}
@@ -307,9 +311,10 @@ func restoreBackup(c *cli.Context) error {
 
 func restoreStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}

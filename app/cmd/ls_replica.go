@@ -45,7 +45,8 @@ func lsReplica(c *cli.Context) error {
 			continue
 		}
 		chain := interface{}("")
-		chainList, err := getChain(r.Address)
+		volumeName := c.GlobalString("volume-name")
+		chainList, err := getChain(r.Address, volumeName)
 		if err == nil {
 			chain = chainList
 		}
@@ -56,8 +57,8 @@ func lsReplica(c *cli.Context) error {
 	return nil
 }
 
-func getChain(address string) ([]string, error) {
-	repClient, err := replicaClient.NewReplicaClient(address)
+func getChain(address, volumeName string) ([]string, error) {
+	repClient, err := replicaClient.NewReplicaClient(address, volumeName)
 	if err != nil {
 		return nil, err
 	}

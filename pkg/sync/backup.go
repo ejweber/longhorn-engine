@@ -83,7 +83,7 @@ func (t *Task) createBackup(replicaInController *types.ControllerReplicaInfo, ba
 		return nil, fmt.Errorf("can only create backup from replica in mode RW, got %s", replicaInController.Mode)
 	}
 
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address)
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (t *Task) createBackup(replicaInController *types.ControllerReplicaInfo, ba
 
 // FetchBackupStatus instance method is @deprecated use the free function FetchBackupStatus instead
 func (t *Task) FetchBackupStatus(backupID string, replicaAddr string) (*BackupStatusInfo, error) {
-	repClient, err := replicaClient.NewReplicaClient(replicaAddr)
+	repClient, err := replicaClient.NewReplicaClient(replicaAddr, t.volumeName)
 	if err != nil {
 		logrus.WithError(err).Errorf("Cannot create a replica client for IP[%v]", replicaAddr)
 		return nil, err
@@ -296,7 +296,7 @@ func (t *Task) restoreBackup(replicaInController *types.ControllerReplicaInfo, b
 		return fmt.Errorf("cannot restore backup from replica in mode ERR")
 	}
 
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address)
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName)
 	if err != nil {
 		return err
 	}
@@ -334,7 +334,7 @@ func (t *Task) Reset() error {
 	}()
 
 	for _, replica := range replicas {
-		repClient, err := replicaClient.NewReplicaClient(replica.Address)
+		repClient, err := replicaClient.NewReplicaClient(replica.Address, t.volumeName)
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to get a replica client for %v", replica.Address)
 			return err
@@ -372,7 +372,7 @@ func (t *Task) RestoreStatus() (map[string]*RestoreStatus, error) {
 			continue
 		}
 
-		repClient, err := replicaClient.NewReplicaClient(replica.Address)
+		repClient, err := replicaClient.NewReplicaClient(replica.Address, t.volumeName)
 		if err != nil {
 			return nil, err
 		}

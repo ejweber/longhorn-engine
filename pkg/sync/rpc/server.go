@@ -57,6 +57,7 @@ type SyncAgentServer struct {
 	isRebuilding    bool
 	isCloning       bool
 	replicaAddress  string
+	volumeName      string
 
 	BackupList       *BackupList
 	SnapshotHashList *SnapshotHashList
@@ -127,13 +128,14 @@ func (cs *CloneStatus) UpdateSyncFileProgress(size int64) {
 	cs.Progress = int((float32(cs.processedSize) / float32(cs.totalSize)) * 100)
 }
 
-func NewSyncAgentServer(startPort, endPort int, replicaAddress string) *SyncAgentServer {
+func NewSyncAgentServer(startPort, endPort int, replicaAddress string, volumeName string) *SyncAgentServer {
 	return &SyncAgentServer{
 		currentPort:     startPort,
 		startPort:       startPort,
 		endPort:         endPort,
 		processesByPort: map[int]string{},
 		replicaAddress:  replicaAddress,
+		volumeName:      volumeName,
 
 		BackupList:       &BackupList{},
 		SnapshotHashList: &SnapshotHashList{},
@@ -426,7 +428,8 @@ func (s *SyncAgentServer) FilesSync(ctx context.Context, req *ptypes.FilesSyncRe
 		}
 	}()
 
-	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress)
+	// TODO: How can we know the volume name here?
+	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress, "")
 	if err != nil {
 		return nil, err
 	}
@@ -517,7 +520,7 @@ func (s *SyncAgentServer) ReplicaRebuildStatus(ctx context.Context, req *empty.E
 }
 
 func (s *SyncAgentServer) SnapshotClone(ctx context.Context, req *ptypes.SnapshotCloneRequest) (res *empty.Empty, err error) {
-	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress)
+	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress, s.volumeName)
 	if err != nil {
 		return nil, err
 	}
@@ -1028,7 +1031,7 @@ func (s *SyncAgentServer) purgeSnapshots() (err error) {
 		}
 	}()
 
-	replicaClient, err := replicaclient.NewReplicaClient(s.replicaAddress)
+	replicaClient, err := replicaclient.NewReplicaClient(s.replicaAddress, s.volumeName)
 	if err != nil {
 		return err
 	}

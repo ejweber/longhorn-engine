@@ -98,13 +98,15 @@ func syncFile(from, to string, fromReplica, toReplica *types.Replica, fileSyncHT
 		to = from
 	}
 
-	fromClient, err := client.NewReplicaClient(fromReplica.Address)
+	// TODO: How can we know volume name here?
+	fromClient, err := client.NewReplicaClient(fromReplica.Address, "")
 	if err != nil {
 		return errors.Wrapf(err, "cannot get replica client for %v", fromReplica.Address)
 	}
 	defer fromClient.Close()
 
-	toClient, err := client.NewReplicaClient(toReplica.Address)
+	// TODO: How can we know volume name here?
+	toClient, err := client.NewReplicaClient(toReplica.Address, "")
 	if err != nil {
 		return errors.Wrapf(err, "cannot get replica client for %v", toReplica.Address)
 	}
@@ -199,7 +201,8 @@ func removeExtraDisks(extraDisks map[string]types.DiskInfo, address string) (err
 		return nil
 	}
 
-	repClient, err := client.NewReplicaClient(address)
+	// TODO: How can we know volume name here?
+	repClient, err := client.NewReplicaClient(address, "")
 	if err != nil {
 		return errors.Wrapf(err, "cannot create replica client for address %v", address)
 	}

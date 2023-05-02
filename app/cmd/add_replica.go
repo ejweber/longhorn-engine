@@ -57,9 +57,11 @@ func addReplica(c *cli.Context) error {
 	replica := c.Args()[0]
 
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
+	fmt.Println(volumeName)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}
@@ -120,9 +122,10 @@ func startWithReplicas(c *cli.Context) error {
 	replicas := c.Args()
 
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}
@@ -162,9 +165,10 @@ func RebuildStatusCmd() cli.Command {
 
 func rebuildStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}
@@ -201,10 +205,11 @@ func verifyRebuildReplica(c *cli.Context) error {
 	}
 	address := c.Args()[0]
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}

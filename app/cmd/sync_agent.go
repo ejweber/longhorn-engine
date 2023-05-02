@@ -59,6 +59,7 @@ func startSyncAgent(c *cli.Context) error {
 	listenPort := c.String("listen")
 	portRange := c.String("listen-port-range")
 	replicaAddress := c.String("replica")
+	volumeName := c.GlobalString("volume-name")
 
 	parts := strings.Split(portRange, "-")
 	if len(parts) != 2 {
@@ -81,7 +82,7 @@ func startSyncAgent(c *cli.Context) error {
 	}
 
 	server := grpc.NewServer()
-	ptypes.RegisterSyncAgentServiceServer(server, syncagentrpc.NewSyncAgentServer(start, end, replicaAddress))
+	ptypes.RegisterSyncAgentServiceServer(server, syncagentrpc.NewSyncAgentServer(start, end, replicaAddress, volumeName))
 	reflection.Register(server)
 
 	logrus.Infof("Listening on sync %s", listenPort)
@@ -91,9 +92,10 @@ func startSyncAgent(c *cli.Context) error {
 
 func doReset(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url)
+	task, err := sync.NewTask(ctx, url, volumeName)
 	if err != nil {
 		return err
 	}

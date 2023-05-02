@@ -120,7 +120,8 @@ func (c *Controller) clientsAndSnapshot(name string) (map[string]*client.Replica
 			return nil, "", fmt.Errorf("backend %s does not support revert", replica.Address)
 		}
 
-		repClient, err = client.NewReplicaClient(replica.Address)
+		// TODO: How can we know volume name here?
+		repClient, err = client.NewReplicaClient(replica.Address, "")
 		if err != nil {
 			return nil, "", err
 		}
