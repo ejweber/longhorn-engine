@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/longhorn/longhorn-engine/pkg/types"
 	"github.com/longhorn/longhorn-engine/pkg/util"
@@ -51,6 +52,7 @@ type ReplicaClient struct {
 	host                string
 	replicaServiceURL   string
 	syncAgentServiceURL string
+	volumeName          string
 
 	replicaServiceContext ReplicaServiceContext
 	syncServiceContext    SyncServiceContext
@@ -62,7 +64,7 @@ func (c *ReplicaClient) Close() error {
 	return nil
 }
 
-func NewReplicaClient(address string) (*ReplicaClient, error) {
+func NewReplicaClient(address, volumeName string) (*ReplicaClient, error) {
 	replicaServiceURL := util.GetGRPCAddress(address)
 	host, strPort, err := net.SplitHostPort(replicaServiceURL)
 	if err != nil {
@@ -79,14 +81,27 @@ func NewReplicaClient(address string) (*ReplicaClient, error) {
 		host:                host,
 		replicaServiceURL:   replicaServiceURL,
 		syncAgentServiceURL: syncAgentServiceURL,
+		volumeName:          volumeName,
 	}, nil
+}
+
+func (c *ReplicaClient) withInstanceNameInterceptor() grpc.DialOption {
+	return grpc.WithUnaryInterceptor(c.volumeNameInterceptor())
+}
+
+func (c *ReplicaClient) volumeNameInterceptor() grpc.UnaryClientInterceptor {
+	// Use a closure to remember the correct volumeName.
+	return func(ctx context.Context, method string, req any, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		ctx = metadata.AppendToOutgoingContext(ctx, "volume-name", c.volumeName)
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
 }
 
 // getReplicaServiceClient lazily initialize the service client, this is to reduce the connection count
 // for the longhorn-manager which executes these command as binaries invocations
 func (c *ReplicaClient) getReplicaServiceClient() (ptypes.ReplicaServiceClient, error) {
 	err := c.replicaServiceContext.once.Do(func() error {
-		cc, err := grpc.Dial(c.replicaServiceURL, grpc.WithInsecure())
+		cc, err := grpc.Dial(c.replicaServiceURL, grpc.WithInsecure(), c.withInstanceNameInterceptor())
 		if err != nil {
 			return err
 		}
@@ -106,7 +121,7 @@ func (c *ReplicaClient) getReplicaServiceClient() (ptypes.ReplicaServiceClient, 
 // for the longhorn-manager which executes these command as binaries invocations
 func (c *ReplicaClient) getSyncServiceClient() (ptypes.SyncAgentServiceClient, error) {
 	err := c.syncServiceContext.once.Do(func() error {
-		cc, err := grpc.Dial(c.syncAgentServiceURL, grpc.WithInsecure())
+		cc, err := grpc.Dial(c.syncAgentServiceURL, grpc.WithInsecure(), c.withInstanceNameInterceptor())
 		if err != nil {
 			return err
 		}
