@@ -12,9 +12,6 @@ import (
 	"github.com/docker/go-units"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"google.golang.org/grpc"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/reflection"
 
 	"github.com/longhorn/longhorn-engine/pkg/backingfile"
 	"github.com/longhorn/longhorn-engine/pkg/replica"
@@ -22,7 +19,6 @@ import (
 	"github.com/longhorn/longhorn-engine/pkg/types"
 	"github.com/longhorn/longhorn-engine/pkg/util"
 	diskutil "github.com/longhorn/longhorn-engine/pkg/util/disk"
-	"github.com/longhorn/longhorn-engine/proto/ptypes"
 )
 
 func ReplicaCmd() cli.Command {
@@ -134,11 +130,7 @@ func startReplica(c *cli.Context) error {
 			return
 		}
 
-		server := grpc.NewServer()
-		rs := replicarpc.NewReplicaServer(s)
-		ptypes.RegisterReplicaServiceServer(server, rs)
-		healthpb.RegisterHealthServer(server, replicarpc.NewReplicaHealthCheckServer(rs))
-		reflection.Register(server)
+		server := replicarpc.NewReplicaServer(volumeName, s)
 
 		logrus.Infof("Listening on gRPC Replica server %s", controlAddress)
 		err = server.Serve(listen)

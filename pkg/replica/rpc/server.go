@@ -6,8 +6,11 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	"github.com/longhorn/longhorn-engine/pkg/replica"
@@ -23,9 +26,32 @@ type ReplicaHealthCheckServer struct {
 	rs *ReplicaServer
 }
 
-func NewReplicaServer(s *replica.Server) *ReplicaServer {
-	return &ReplicaServer{
-		s: s,
+func NewReplicaServer(volumeName string, s *replica.Server) *grpc.Server {
+	rs := &ReplicaServer{s: s}
+	server := grpc.NewServer(withVolumeNameInterceptor(volumeName))
+	ptypes.RegisterReplicaServiceServer(server, rs)
+	healthpb.RegisterHealthServer(server, NewReplicaHealthCheckServer(rs))
+	reflection.Register(server)
+	return server
+}
+
+func withVolumeNameInterceptor(volumeName string) grpc.ServerOption {
+	return grpc.UnaryInterceptor(volumeNameInterceptor(volumeName))
+}
+
+func volumeNameInterceptor(volumeName string) grpc.UnaryServerInterceptor {
+	// Use a closure to remember the correct volumeName.
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+		if ok {
+			incomingVolumeName, ok := md["volume-name"]
+			if ok && incomingVolumeName[0] != volumeName {
+				return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check replica address")
+			}
+		}
+
+		// Call the RPC's actual handler.
+		return handler(ctx, req)
 	}
 }
 
