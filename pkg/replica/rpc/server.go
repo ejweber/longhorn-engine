@@ -28,18 +28,18 @@ type ReplicaHealthCheckServer struct {
 
 func NewReplicaServer(volumeName, instanceName string, s *replica.Server) *grpc.Server {
 	rs := &ReplicaServer{s: s}
-	server := grpc.NewServer(withVolumeNameInterceptor(volumeName, instanceName))
+	server := grpc.NewServer(withIdentityValidationInterceptor(volumeName, instanceName))
 	ptypes.RegisterReplicaServiceServer(server, rs)
 	healthpb.RegisterHealthServer(server, NewReplicaHealthCheckServer(rs))
 	reflection.Register(server)
 	return server
 }
 
-func withVolumeNameInterceptor(volumeName, instanceName string) grpc.ServerOption {
-	return grpc.UnaryInterceptor(volumeNameInterceptor(volumeName, instanceName))
+func withIdentityValidationInterceptor(volumeName, instanceName string) grpc.ServerOption {
+	return grpc.UnaryInterceptor(identityValidationInterceptor(volumeName, instanceName))
 }
 
-func volumeNameInterceptor(volumeName, instanceName string) grpc.UnaryServerInterceptor {
+func identityValidationInterceptor(volumeName, instanceName string) grpc.UnaryServerInterceptor {
 	// Use a closure to remember the correct volumeName and/or instanceName.
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
