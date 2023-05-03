@@ -83,6 +83,10 @@ func ControllerCmd() cli.Command {
 				Value:    5,
 				Usage:    "HTTP client timeout for replica file sync server",
 			},
+			cli.StringFlag{
+				Name:  "instance-name",
+				Value: "",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := startController(c); err != nil {
@@ -112,6 +116,7 @@ func startController(c *cli.Context) error {
 	unmapMarkSnapChainRemoved := c.Bool("unmap-mark-snap-chain-removed")
 	dataServerProtocol := c.String("data-server-protocol")
 	fileSyncHTTPClientTimeout := c.Int("file-sync-http-client-timeout")
+	instanceName := c.String("instance-name")
 
 	size := c.String("size")
 	if size == "" {
@@ -187,7 +192,7 @@ func startController(c *cli.Context) error {
 	}
 
 	control.GRPCAddress = util.GetGRPCAddress(listen)
-	control.GRPCServer = controllerrpc.GetControllerGRPCServer(control)
+	control.GRPCServer = controllerrpc.GetControllerGRPCServer(name, instanceName, control)
 
 	control.StartGRPCServer()
 	return control.WaitForShutdown()
