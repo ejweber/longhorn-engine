@@ -58,7 +58,7 @@ func lsReplica(c *cli.Context) error {
 }
 
 func getChain(address, volumeName string) ([]string, error) {
-	repClient, err := replicaClient.NewReplicaClient(address, volumeName)
+	repClient, err := replicaClient.NewReplicaClient(address, volumeName, "") // TODO
 	if err != nil {
 		return nil, err
 	}

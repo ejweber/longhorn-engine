@@ -65,7 +65,7 @@ func (c *ReplicaClient) Close() error {
 	return nil
 }
 
-func NewReplicaClient(address, volumeName string) (*ReplicaClient, error) {
+func NewReplicaClient(address, volumeName, instanceName string) (*ReplicaClient, error) {
 	replicaServiceURL := util.GetGRPCAddress(address)
 	host, strPort, err := net.SplitHostPort(replicaServiceURL)
 	if err != nil {
@@ -83,6 +83,7 @@ func NewReplicaClient(address, volumeName string) (*ReplicaClient, error) {
 		replicaServiceURL:   replicaServiceURL,
 		syncAgentServiceURL: syncAgentServiceURL,
 		volumeName:          volumeName,
+		instanceName:        instanceName,
 	}, nil
 }
 

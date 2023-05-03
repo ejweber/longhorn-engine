@@ -74,7 +74,7 @@ func addReplica(c *cli.Context) error {
 	url := c.GlobalString("url")
 	volumeName := c.String("volume-name")
 	controllerInstanceName := c.String("controller-instance-name")
-	// replicaInstanceName := c.String("replica-instance-name")
+	replicaInstanceName := c.String("replica-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, controllerInstanceName)
@@ -106,7 +106,7 @@ func addReplica(c *cli.Context) error {
 	if c.Bool("restore") {
 		return task.AddRestoreReplica(volumeSize, volumeCurrentSize, replica) // TODO: Move replica instance name to here.
 	}
-	return task.AddReplica(volumeSize, volumeCurrentSize, replica, fileSyncHTTPClientTimeout, fastSync) // TODO: Move replicaInstanceName to here.
+	return task.AddReplica(volumeSize, volumeCurrentSize, replica, replicaInstanceName, fileSyncHTTPClientTimeout, fastSync) // TODO: Move replicaInstanceName to here.
 }
 
 func StartWithReplicasCmd() cli.Command {

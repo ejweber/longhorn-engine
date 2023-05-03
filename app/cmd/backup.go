@@ -138,7 +138,7 @@ func checkBackupStatus(c *cli.Context) error {
 			}
 
 			volumeName := c.GlobalString("volume-name")
-			repClient, err := replicaClient.NewReplicaClient(replica.Address, volumeName)
+			repClient, err := replicaClient.NewReplicaClient(replica.Address, volumeName, "") // TODO
 			if err != nil {
 				logrus.WithError(err).Errorf("Cannot create a replica client for IP[%v]", replicaAddress)
 				return err
@@ -163,7 +163,7 @@ func checkBackupStatus(c *cli.Context) error {
 	}
 
 	volumeName := c.GlobalString("volume-name")
-	repClient, err := replicaClient.NewReplicaClient(replicaAddress, volumeName)
+	repClient, err := replicaClient.NewReplicaClient(replicaAddress, volumeName, "") // TODO
 	if err != nil {
 		logrus.WithError(err).Errorf("Cannot create a replica client for IP[%v]", replicaAddress)
 		return err

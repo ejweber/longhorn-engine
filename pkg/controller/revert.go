@@ -121,7 +121,7 @@ func (c *Controller) clientsAndSnapshot(name string) (map[string]*client.Replica
 		}
 
 		// TODO: How can we know volume name here?
-		repClient, err = client.NewReplicaClient(replica.Address, "")
+		repClient, err = client.NewReplicaClient(replica.Address, "", "") // TODO
 		if err != nil {
 			return nil, "", err
 		}

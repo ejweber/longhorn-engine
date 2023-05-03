@@ -93,7 +93,7 @@ func exportVolume(c *cli.Context) error {
 	}
 
 	volumeName := c.GlobalString("volume-name")
-	rClient, err := replicaclient.NewReplicaClient(r.Address, volumeName)
+	rClient, err := replicaclient.NewReplicaClient(r.Address, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}

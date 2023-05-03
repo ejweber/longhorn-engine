@@ -11,7 +11,7 @@ import (
 
 func GetReplicaDisksAndHead(address string) (map[string]types.DiskInfo, string, error) {
 	// TODO: How can we know volume name here?
-	repClient, err := client.NewReplicaClient(address, "")
+	repClient, err := client.NewReplicaClient(address, "", "") // TODO
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "cannot get replica client for %v", address)
 	}

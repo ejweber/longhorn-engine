@@ -189,7 +189,7 @@ func (t *Task) PurgeSnapshots(skip bool) error {
 		go func(rep *types.ControllerReplicaInfo) {
 			defer wg.Done()
 
-			repClient, err := replicaClient.NewReplicaClient(rep.Address, t.volumeName)
+			repClient, err := replicaClient.NewReplicaClient(rep.Address, t.volumeName, "") // TODO
 			if err != nil {
 				errorMap.Store(rep.Address, errors.Wrapf(err, "failed to get replica client %v before purging", rep.Address))
 				return
@@ -242,7 +242,7 @@ func (t *Task) PurgeSnapshotStatus() (map[string]*SnapshotPurgeStatus, error) {
 			continue
 		}
 
-		repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName)
+		repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
 		if err != nil {
 			return nil, err
 		}
@@ -267,7 +267,7 @@ func (t *Task) PurgeSnapshotStatus() (map[string]*SnapshotPurgeStatus, error) {
 }
 
 func (t *Task) isRebuilding(replicaInController *types.ControllerReplicaInfo) (bool, error) {
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName)
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
 	if err != nil {
 		return false, err
 	}
@@ -282,7 +282,7 @@ func (t *Task) isRebuilding(replicaInController *types.ControllerReplicaInfo) (b
 }
 
 func (t *Task) isHashingSnapshot(replicaInController *types.ControllerReplicaInfo) (bool, error) {
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName)
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
 	if err != nil {
 		return false, err
 	}
@@ -297,7 +297,7 @@ func (t *Task) isHashingSnapshot(replicaInController *types.ControllerReplicaInf
 }
 
 func (t *Task) isPurging(replicaInController *types.ControllerReplicaInfo) (bool, error) {
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName)
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
 	if err != nil {
 		return false, err
 	}
@@ -316,7 +316,7 @@ func (t *Task) markSnapshotAsRemoved(replicaInController *types.ControllerReplic
 		return fmt.Errorf("can only mark snapshot as removed from replica in mode RW, got %s", replicaInController.Mode)
 	}
 
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName)
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func (t *Task) markSnapshotAsRemoved(replicaInController *types.ControllerReplic
 }
 
 func (t *Task) cancelSnapshotHashJob(replicaInController *types.ControllerReplicaInfo, snapshot string) error {
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName)
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func (t *Task) AddRestoreReplica(volumeSize, volumeCurrentSize int64, replica st
 }
 
 func (t *Task) checkRestoreReplicaSize(address string, volumeSize int64) error {
-	replicaCli, err := replicaClient.NewReplicaClient(address, t.volumeName)
+	replicaCli, err := replicaClient.NewReplicaClient(address, t.volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func (t *Task) VerifyRebuildReplica(address string) error {
 	return nil
 }
 
-func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replica string, fileSyncHTTPClientTimeout int, fastSync bool) error {
+func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replicaAddress, replicaInstanceName string, fileSyncHTTPClientTimeout int, fastSync bool) error {
 	volume, err := t.client.VolumeGet()
 	if err != nil {
 		return err
@@ -408,24 +408,24 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replica string, f
 
 	// This is why we can still add a replica if the engine has none.
 	if volume.ReplicaCount == 0 {
-		return t.client.VolumeStart(volumeSize, volumeCurrentSize, replica)
+		return t.client.VolumeStart(volumeSize, volumeCurrentSize, replicaAddress)
 	}
 
-	if err := t.checkAndExpandReplica(replica, volume.Size); err != nil {
+	if err := t.checkAndExpandReplica(replicaAddress, replicaInstanceName, volume.Size); err != nil {
 		return err
 	}
 
-	if err := t.checkAndResetFailedRebuild(replica); err != nil {
+	if err := t.checkAndResetFailedRebuild(replicaAddress); err != nil {
 		return err
 	}
 
-	logrus.Infof("Adding replica %s in WO mode", replica)
-	_, err = t.client.ReplicaCreate(replica, true, types.WO)
+	logrus.Infof("Adding replica %s in WO mode", replicaAddress)
+	_, err = t.client.ReplicaCreate(replicaAddress, true, types.WO)
 	if err != nil {
 		return err
 	}
 
-	fromClient, toClient, fromAddress, _, err := t.getTransferClients(replica)
+	fromClient, toClient, fromAddress, _, err := t.getTransferClients(replicaAddress)
 	if err != nil {
 		return err
 	}
@@ -439,7 +439,7 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replica string, f
 		return err
 	}
 
-	resp, err := t.client.ReplicaPrepareRebuild(replica)
+	resp, err := t.client.ReplicaPrepareRebuild(replicaAddress)
 	if err != nil {
 		return err
 	}
@@ -452,7 +452,7 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replica string, f
 		return err
 	}
 
-	if err := t.reloadAndVerify(replica, toClient); err != nil {
+	if err := t.reloadAndVerify(replicaAddress, toClient); err != nil {
 		return err
 	}
 
@@ -460,7 +460,7 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replica string, f
 }
 
 func (t *Task) checkAndResetFailedRebuild(address string) error {
-	client, err := replicaClient.NewReplicaClient(address, t.volumeName)
+	client, err := replicaClient.NewReplicaClient(address, t.volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -486,8 +486,8 @@ func (t *Task) checkAndResetFailedRebuild(address string) error {
 	return nil
 }
 
-func (t *Task) checkAndExpandReplica(address string, size int64) error {
-	client, err := replicaClient.NewReplicaClient(address, t.volumeName)
+func (t *Task) checkAndExpandReplica(replicaAddress, replicaInstanceName string, size int64) error {
+	client, err := replicaClient.NewReplicaClient(replicaAddress, t.volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -592,7 +592,7 @@ func (t *Task) getFromReplicaClientForTransfer() (*replicaClient.ReplicaClient, 
 		if r.Mode != types.RW {
 			continue
 		}
-		fromClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName)
+		fromClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
 		if err != nil {
 			logrus.WithError(err).Warnf("Failed to get the client for replica %v when picking up a transfer-from replica", r.Address)
 			continue
@@ -625,7 +625,7 @@ func (t *Task) getToReplicaClientForTransfer(address string) (*replicaClient.Rep
 		if r.Mode != types.WO {
 			return nil, "", fmt.Errorf("replica %s is not in mode WO: %s", address, r.Mode)
 		}
-		toClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName)
+		toClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
 		if err != nil {
 			return nil, "", err
 		}
@@ -637,7 +637,7 @@ func (t *Task) getToReplicaClientForTransfer(address string) (*replicaClient.Rep
 
 func getNonBackingDisks(address string) (map[string]types.DiskInfo, error) {
 	// TODO: How can we know volume name here?
-	repClient, err := replicaClient.NewReplicaClient(address, "")
+	repClient, err := replicaClient.NewReplicaClient(address, "", "") // TODO
 	if err != nil {
 		return nil, err
 	}
@@ -762,7 +762,7 @@ func (t *Task) RebuildStatus() (map[string]*ReplicaRebuildStatus, error) {
 		}
 
 		// TODO: How can we know volume name here?
-		repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName)
+		repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
 		if err != nil {
 			return nil, err
 		}
@@ -832,7 +832,7 @@ func CloneSnapshot(engineControllerClient, fromControllerClient *client.Controll
 		go func(r *types.ControllerReplicaInfo) {
 			defer wg.Done()
 			// TODO: How can we know volume name here?
-			repClient, err := replicaClient.NewReplicaClient(r.Address, "")
+			repClient, err := replicaClient.NewReplicaClient(r.Address, "", "") // TODO
 			if err != nil {
 				syncErrorMap.Store(r.Address, err)
 				return
@@ -877,7 +877,7 @@ func CloneStatus(engineControllerClient *client.ControllerClient) (map[string]*S
 
 	for _, r := range replicas {
 		// TODO: How can we know volume name here?
-		repClient, err := replicaClient.NewReplicaClient(r.Address, "")
+		repClient, err := replicaClient.NewReplicaClient(r.Address, "", "") // TODO
 		if err != nil {
 			return nil, err
 		}
@@ -935,7 +935,7 @@ func (t *Task) HashSnapshot(snapshotName string, rehash bool) error {
 		go func(r *types.ControllerReplicaInfo) {
 			defer wg.Done()
 
-			repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName)
+			repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
 			if err != nil {
 				syncErrorMap.Store(r.Address, err)
 				return
@@ -1009,7 +1009,7 @@ func (t *Task) HashSnapshotStatus(snapshotName string) (map[string]*SnapshotHash
 				}
 			}()
 
-			repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName)
+			repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
 			if err != nil {
 				err = errors.Wrapf(err, "failed to create replica client to %v", r.Address)
 				return
@@ -1062,7 +1062,7 @@ func (t *Task) HashSnapshotCancel(snapshotName string) error {
 	for _, r := range replicas {
 		go func(r *types.ControllerReplicaInfo) {
 			defer wg.Done()
-			repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName)
+			repClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
 			if err != nil {
 				syncErrorMap.Store(r.Address, err)
 				return
