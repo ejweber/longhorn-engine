@@ -41,6 +41,21 @@ func AddReplicaCmd() cli.Command {
 				Value:    5,
 				Usage:    "HTTP client timeout for replica file sync server",
 			},
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "controller-instance-name",
+				Required: false,
+				Usage:    "Name of the controller instance (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "replica-instance-name",
+				Required: false,
+				Usage:    "Name of the replica instance (for validation purposes)",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := addReplica(c); err != nil {
@@ -57,11 +72,12 @@ func addReplica(c *cli.Context) error {
 	replica := c.Args()[0]
 
 	url := c.GlobalString("url")
-	volumeName := c.GlobalString("volume-name")
-	fmt.Println(volumeName)
+	volumeName := c.String("volume-name")
+	controllerInstanceName := c.String("controller-instance-name")
+	// replicaInstanceName := c.String("replica-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, controllerInstanceName)
 	if err != nil {
 		return err
 	}
@@ -88,9 +104,9 @@ func addReplica(c *cli.Context) error {
 	fileSyncHTTPClientTimeout := c.Int("file-sync-http-client-timeout")
 
 	if c.Bool("restore") {
-		return task.AddRestoreReplica(volumeSize, volumeCurrentSize, replica)
+		return task.AddRestoreReplica(volumeSize, volumeCurrentSize, replica) // TODO: Move replica instance name to here.
 	}
-	return task.AddReplica(volumeSize, volumeCurrentSize, replica, fileSyncHTTPClientTimeout, fastSync)
+	return task.AddReplica(volumeSize, volumeCurrentSize, replica, fileSyncHTTPClientTimeout, fastSync) // TODO: Move replicaInstanceName to here.
 }
 
 func StartWithReplicasCmd() cli.Command {
@@ -125,7 +141,7 @@ func startWithReplicas(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -168,7 +184,7 @@ func rebuildStatus(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -209,7 +225,7 @@ func verifyRebuildReplica(c *cli.Context) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}

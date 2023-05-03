@@ -19,10 +19,9 @@ import (
 )
 
 type Task struct {
-	client              *client.ControllerClient
-	volumeName          string
-	engineInstanceName  string
-	replicaInstanceName string
+	client       *client.ControllerClient
+	volumeName   string
+	instanceName string
 }
 
 type TaskError struct {
@@ -108,8 +107,8 @@ func (e ReplicaError) Error() string {
 // NewTask creates new task with an initialized ControllerClient
 // The lifetime of the Task::client is bound to the context lifetime
 // client calls have their own contexts with timeouts for the call
-func NewTask(ctx context.Context, controllerAddress, volumeName, controllerInstanceName, replicaInstanceName string) (*Task, error) {
-	controllerClient, err := client.NewControllerClient(controllerAddress, volumeName, controllerInstanceName)
+func NewTask(ctx context.Context, controllerAddress, volumeName, instanceName string) (*Task, error) {
+	controllerClient, err := client.NewControllerClient(controllerAddress, volumeName, instanceName)
 	if err != nil {
 		return nil, err
 	}

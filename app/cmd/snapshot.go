@@ -272,7 +272,7 @@ func rmSnapshot(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -293,7 +293,7 @@ func purgeSnapshot(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -311,7 +311,7 @@ func purgeSnapshotStatus(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -480,7 +480,7 @@ func hashSnapshot(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -505,7 +505,7 @@ func cancelHashSnapshot(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -528,7 +528,7 @@ func hashSnapshotStatus(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
 	if err != nil {
 		return err
 	}
