@@ -343,33 +343,33 @@ func (t *Task) cancelSnapshotHashJob(replicaInController *types.ControllerReplic
 	return nil
 }
 
-func (t *Task) AddRestoreReplica(volumeSize, volumeCurrentSize int64, replica string) error {
+func (t *Task) AddRestoreReplica(volumeSize, volumeCurrentSize int64, address, instanceName string) error {
 	volume, err := t.client.VolumeGet()
 	if err != nil {
 		return err
 	}
 
 	if volume.ReplicaCount == 0 {
-		return t.client.VolumeStart(volumeSize, volumeCurrentSize, replica)
+		return t.client.VolumeStart(volumeSize, volumeCurrentSize, address)
 	}
 
-	if err := t.checkRestoreReplicaSize(replica, volume.Size); err != nil {
+	if err := t.checkRestoreReplicaSize(address, instanceName, volume.Size); err != nil {
 		return err
 	}
 
-	logrus.Infof("Adding restore replica %s in WO mode", replica)
+	logrus.Infof("Adding restore replica %s in WO mode", address)
 
 	// The replica mode will become RW after the first restoration complete.
 	// And the rebuilding flag in the replica server won't be set since this is not normal rebuilding.
-	if _, err = t.client.ReplicaCreate(replica, false, types.WO); err != nil {
+	if _, err = t.client.ReplicaCreate(address, false, types.WO); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (t *Task) checkRestoreReplicaSize(address string, volumeSize int64) error {
-	replicaCli, err := replicaClient.NewReplicaClient(address, t.volumeName, "") // TODO
+func (t *Task) checkRestoreReplicaSize(address, instanceName string, volumeSize int64) error {
+	replicaCli, err := replicaClient.NewReplicaClient(address, t.volumeName, instanceName)
 	if err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func (t *Task) VerifyRebuildReplica(address string) error {
 	return nil
 }
 
-func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replicaAddress, replicaInstanceName string, fileSyncHTTPClientTimeout int, fastSync bool) error {
+func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, address, instanceName string, fileSyncHTTPClientTimeout int, fastSync bool) error {
 	volume, err := t.client.VolumeGet()
 	if err != nil {
 		return err
@@ -408,24 +408,24 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replicaAddress, r
 
 	// This is why we can still add a replica if the engine has none.
 	if volume.ReplicaCount == 0 {
-		return t.client.VolumeStart(volumeSize, volumeCurrentSize, replicaAddress)
+		return t.client.VolumeStart(volumeSize, volumeCurrentSize, address)
 	}
 
-	if err := t.checkAndExpandReplica(replicaAddress, replicaInstanceName, volume.Size); err != nil {
+	if err := t.checkAndExpandReplica(address, instanceName, volume.Size); err != nil {
 		return err
 	}
 
-	if err := t.checkAndResetFailedRebuild(replicaAddress); err != nil {
+	if err := t.checkAndResetFailedRebuild(address, instanceName); err != nil {
 		return err
 	}
 
-	logrus.Infof("Adding replica %s in WO mode", replicaAddress)
-	_, err = t.client.ReplicaCreate(replicaAddress, true, types.WO)
+	logrus.Infof("Adding replica %s in WO mode", address)
+	_, err = t.client.ReplicaCreate(address, true, types.WO)
 	if err != nil {
 		return err
 	}
 
-	fromClient, toClient, fromAddress, _, err := t.getTransferClients(replicaAddress)
+	fromClient, toClient, fromAddress, _, err := t.getTransferClients(address, instanceName)
 	if err != nil {
 		return err
 	}
@@ -439,7 +439,7 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replicaAddress, r
 		return err
 	}
 
-	resp, err := t.client.ReplicaPrepareRebuild(replicaAddress)
+	resp, err := t.client.ReplicaPrepareRebuild(address)
 	if err != nil {
 		return err
 	}
@@ -452,15 +452,15 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, replicaAddress, r
 		return err
 	}
 
-	if err := t.reloadAndVerify(replicaAddress, toClient); err != nil {
+	if err := t.reloadAndVerify(address, toClient); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (t *Task) checkAndResetFailedRebuild(address string) error {
-	client, err := replicaClient.NewReplicaClient(address, t.volumeName, "") // TODO
+func (t *Task) checkAndResetFailedRebuild(replicaAddress, replicaInstanceName string) error {
+	client, err := replicaClient.NewReplicaClient(replicaAddress, t.volumeName, replicaInstanceName)
 	if err != nil {
 		return err
 	}
@@ -487,18 +487,16 @@ func (t *Task) checkAndResetFailedRebuild(address string) error {
 }
 
 func (t *Task) checkAndExpandReplica(replicaAddress, replicaInstanceName string, size int64) error {
-	client, err := replicaClient.NewReplicaClient(replicaAddress, t.volumeName, "") // TODO
+	client, err := replicaClient.NewReplicaClient(replicaAddress, t.volumeName, replicaInstanceName)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	fmt.Println("before get")
 	replica, err := client.GetReplica()
 	if err != nil {
 		return err
 	}
-	fmt.Println("after get")
 
 	replicaSize, err := strconv.ParseInt(replica.Size, 10, 64)
 	if err != nil {
@@ -552,7 +550,7 @@ func checkIfVolumeHeadExists(infoList []types.SyncFileInfo) bool {
 	return false
 }
 
-func (t *Task) getTransferClients(address string) (*replicaClient.ReplicaClient, *replicaClient.ReplicaClient, string, string, error) {
+func (t *Task) getTransferClients(address, instanceName string) (*replicaClient.ReplicaClient, *replicaClient.ReplicaClient, string, string, error) {
 	var err error
 	var fromClient, toClient *replicaClient.ReplicaClient
 	var fromAddress, toAddress string
@@ -574,7 +572,7 @@ func (t *Task) getTransferClients(address string) (*replicaClient.ReplicaClient,
 	}
 	logrus.Infof("Using replica %s as the source for rebuild", fromAddress)
 
-	if toClient, toAddress, err = t.getToReplicaClientForTransfer(address); err != nil {
+	if toClient, toAddress, err = t.getToReplicaClientForTransfer(address, instanceName); err != nil {
 		return nil, nil, "", "", err
 	}
 	logrus.Infof("Using replica %s as the target for rebuild", toAddress)
@@ -592,7 +590,8 @@ func (t *Task) getFromReplicaClientForTransfer() (*replicaClient.ReplicaClient, 
 		if r.Mode != types.RW {
 			continue
 		}
-		fromClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
+		// We don't know the instanceName for this replica, so we won't validate it.
+		fromClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "")
 		if err != nil {
 			logrus.WithError(err).Warnf("Failed to get the client for replica %v when picking up a transfer-from replica", r.Address)
 			continue
@@ -612,7 +611,7 @@ func (t *Task) getFromReplicaClientForTransfer() (*replicaClient.ReplicaClient, 
 	return nil, "", fmt.Errorf("failed to find good replica to copy from")
 }
 
-func (t *Task) getToReplicaClientForTransfer(address string) (*replicaClient.ReplicaClient, string, error) {
+func (t *Task) getToReplicaClientForTransfer(address, instanceName string) (*replicaClient.ReplicaClient, string, error) {
 	replicas, err := t.client.ReplicaList()
 	if err != nil {
 		return nil, "", err
@@ -625,7 +624,7 @@ func (t *Task) getToReplicaClientForTransfer(address string) (*replicaClient.Rep
 		if r.Mode != types.WO {
 			return nil, "", fmt.Errorf("replica %s is not in mode WO: %s", address, r.Mode)
 		}
-		toClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, "") // TODO
+		toClient, err := replicaClient.NewReplicaClient(r.Address, t.volumeName, instanceName) // TODO
 		if err != nil {
 			return nil, "", err
 		}

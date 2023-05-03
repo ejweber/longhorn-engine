@@ -104,9 +104,9 @@ func addReplica(c *cli.Context) error {
 	fileSyncHTTPClientTimeout := c.Int("file-sync-http-client-timeout")
 
 	if c.Bool("restore") {
-		return task.AddRestoreReplica(volumeSize, volumeCurrentSize, replica) // TODO: Move replica instance name to here.
+		return task.AddRestoreReplica(volumeSize, volumeCurrentSize, replica, replicaInstanceName)
 	}
-	return task.AddReplica(volumeSize, volumeCurrentSize, replica, replicaInstanceName, fileSyncHTTPClientTimeout, fastSync) // TODO: Move replicaInstanceName to here.
+	return task.AddReplica(volumeSize, volumeCurrentSize, replica, replicaInstanceName, fileSyncHTTPClientTimeout, fastSync)
 }
 
 func StartWithReplicasCmd() cli.Command {
