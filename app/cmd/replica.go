@@ -72,6 +72,10 @@ func ReplicaCmd() cli.Command {
 				Hidden: false,
 				Usage:  "To mark the current disk chain as removed before starting unmap",
 			},
+			cli.StringFlag{
+				Name:  "instance-name",
+				Value: "",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := startReplica(c); err != nil {
