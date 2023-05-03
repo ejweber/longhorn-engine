@@ -51,7 +51,7 @@ func identityValidationInterceptor(volumeName, instanceName string) grpc.UnarySe
 			incomingVolumeName, ok := md["volume-name"]
 			// Only refuse to serve if both client and server provide validation information.
 			if ok && volumeName != "" && incomingVolumeName[0] != volumeName {
-				return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check replica address")
+				return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check controller address")
 			}
 		}
 
@@ -59,7 +59,7 @@ func identityValidationInterceptor(volumeName, instanceName string) grpc.UnarySe
 			incomingInstanceName, ok := md["instance-name"]
 			// Only refuse to serve if both client and server provide validation information.
 			if ok && instanceName != "" && incomingInstanceName[0] != instanceName {
-				return nil, status.Errorf(codes.InvalidArgument, "Incorrect instance name; check replica address")
+				return nil, status.Errorf(codes.InvalidArgument, "Incorrect instance name; check controller address")
 			}
 		}
 

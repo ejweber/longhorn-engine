@@ -122,6 +122,16 @@ func StartWithReplicasCmd() cli.Command {
 				Name:  "current-size",
 				Usage: "Volume current size in bytes or human readable 42kb, 42mb, 42gb",
 			},
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "controller-instance-name",
+				Required: false,
+				Usage:    "Name of the controller instance (for validation purposes)",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := startWithReplicas(c); err != nil {
@@ -138,10 +148,11 @@ func startWithReplicas(c *cli.Context) error {
 	replicas := c.Args()
 
 	url := c.GlobalString("url")
-	volumeName := c.GlobalString("volume-name")
+	volumeName := c.String("volume-name")
+	controllerInstanceName := c.String("controller-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, controllerInstanceName)
 	if err != nil {
 		return err
 	}
