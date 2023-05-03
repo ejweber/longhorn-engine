@@ -53,6 +53,7 @@ type ReplicaClient struct {
 	replicaServiceURL   string
 	syncAgentServiceURL string
 	volumeName          string
+	instanceName        string
 
 	replicaServiceContext ReplicaServiceContext
 	syncServiceContext    SyncServiceContext
@@ -85,14 +86,20 @@ func NewReplicaClient(address, volumeName string) (*ReplicaClient, error) {
 	}, nil
 }
 
-func (c *ReplicaClient) withInstanceNameInterceptor() grpc.DialOption {
-	return grpc.WithUnaryInterceptor(c.volumeNameInterceptor())
+func (c *ReplicaClient) withIdentityValidationInterceptor() grpc.DialOption {
+	return grpc.WithUnaryInterceptor(c.identityValidationInterceptor())
 }
 
-func (c *ReplicaClient) volumeNameInterceptor() grpc.UnaryClientInterceptor {
+func (c *ReplicaClient) identityValidationInterceptor() grpc.UnaryClientInterceptor {
 	// Use a closure to remember the correct volumeName.
 	return func(ctx context.Context, method string, req any, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		ctx = metadata.AppendToOutgoingContext(ctx, "volume-name", c.volumeName)
+		if c.volumeName != "" {
+			ctx = metadata.AppendToOutgoingContext(ctx, "volume-name", c.volumeName)
+		}
+		if c.instanceName != "" {
+			ctx = metadata.AppendToOutgoingContext(ctx, "instance-name", c.instanceName)
+		}
+
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
@@ -101,7 +108,7 @@ func (c *ReplicaClient) volumeNameInterceptor() grpc.UnaryClientInterceptor {
 // for the longhorn-manager which executes these command as binaries invocations
 func (c *ReplicaClient) getReplicaServiceClient() (ptypes.ReplicaServiceClient, error) {
 	err := c.replicaServiceContext.once.Do(func() error {
-		cc, err := grpc.Dial(c.replicaServiceURL, grpc.WithInsecure(), c.withInstanceNameInterceptor())
+		cc, err := grpc.Dial(c.replicaServiceURL, grpc.WithInsecure(), c.withIdentityValidationInterceptor())
 		if err != nil {
 			return err
 		}
@@ -121,7 +128,7 @@ func (c *ReplicaClient) getReplicaServiceClient() (ptypes.ReplicaServiceClient, 
 // for the longhorn-manager which executes these command as binaries invocations
 func (c *ReplicaClient) getSyncServiceClient() (ptypes.SyncAgentServiceClient, error) {
 	err := c.syncServiceContext.once.Do(func() error {
-		cc, err := grpc.Dial(c.syncAgentServiceURL, grpc.WithInsecure(), c.withInstanceNameInterceptor())
+		cc, err := grpc.Dial(c.syncAgentServiceURL, grpc.WithInsecure(), c.withIdentityValidationInterceptor())
 		if err != nil {
 			return err
 		}
