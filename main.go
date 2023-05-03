@@ -100,10 +100,6 @@ func longhornCli() {
 		cli.BoolFlag{
 			Name: "debug",
 		},
-		cli.StringFlag{
-			Name:  "volume-name",
-			Value: "",
-		},
 	}
 	a.Commands = []cli.Command{
 		cmd.ControllerCmd(),

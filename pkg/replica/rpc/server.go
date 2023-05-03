@@ -26,27 +26,36 @@ type ReplicaHealthCheckServer struct {
 	rs *ReplicaServer
 }
 
-func NewReplicaServer(volumeName string, s *replica.Server) *grpc.Server {
+func NewReplicaServer(volumeName, instanceName string, s *replica.Server) *grpc.Server {
 	rs := &ReplicaServer{s: s}
-	server := grpc.NewServer(withVolumeNameInterceptor(volumeName))
+	server := grpc.NewServer(withVolumeNameInterceptor(volumeName, instanceName))
 	ptypes.RegisterReplicaServiceServer(server, rs)
 	healthpb.RegisterHealthServer(server, NewReplicaHealthCheckServer(rs))
 	reflection.Register(server)
 	return server
 }
 
-func withVolumeNameInterceptor(volumeName string) grpc.ServerOption {
-	return grpc.UnaryInterceptor(volumeNameInterceptor(volumeName))
+func withVolumeNameInterceptor(volumeName, instanceName string) grpc.ServerOption {
+	return grpc.UnaryInterceptor(volumeNameInterceptor(volumeName, instanceName))
 }
 
-func volumeNameInterceptor(volumeName string) grpc.UnaryServerInterceptor {
-	// Use a closure to remember the correct volumeName.
+func volumeNameInterceptor(volumeName, instanceName string) grpc.UnaryServerInterceptor {
+	// Use a closure to remember the correct volumeName and/or instanceName.
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if ok {
 			incomingVolumeName, ok := md["volume-name"]
-			if ok && incomingVolumeName[0] != volumeName {
+			// Only refuse to serve if both client and server provide validation information.
+			if ok && volumeName != "" && incomingVolumeName[0] != volumeName {
 				return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check replica address")
+			}
+		}
+
+		if ok {
+			incomingInstanceName, ok := md["instance-name"]
+			// Only refuse to serve if both client and server provide validation information.
+			if ok && instanceName != "" && incomingInstanceName[0] != instanceName {
+				return nil, status.Errorf(codes.InvalidArgument, "Incorrect instance name; check replica address")
 			}
 		}
 
