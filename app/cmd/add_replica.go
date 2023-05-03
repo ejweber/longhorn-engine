@@ -61,7 +61,7 @@ func addReplica(c *cli.Context) error {
 	fmt.Println(volumeName)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName)
+	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func startWithReplicas(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName)
+	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func rebuildStatus(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName)
+	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func verifyRebuildReplica(c *cli.Context) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName)
+	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
 	if err != nil {
 		return err
 	}

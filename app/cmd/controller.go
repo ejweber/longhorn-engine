@@ -200,5 +200,5 @@ func startController(c *cli.Context) error {
 
 func getControllerClient(c *cli.Context) (*client.ControllerClient, error) {
 	url := c.GlobalString("url")
-	return client.NewControllerClient(url)
+	return client.NewControllerClient(url, "", "") // TODO
 }

@@ -95,7 +95,7 @@ func doReset(c *cli.Context) error {
 	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName)
+	task, err := sync.NewTask(ctx, url, volumeName, "", "") // TODO
 	if err != nil {
 		return err
 	}

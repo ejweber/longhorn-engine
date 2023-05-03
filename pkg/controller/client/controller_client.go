@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/longhorn/longhorn-engine/pkg/meta"
 	"github.com/longhorn/longhorn-engine/pkg/types"
@@ -41,9 +42,9 @@ const (
 	GRPCServiceTimeout = 3 * time.Minute
 )
 
-func NewControllerClient(address string) (*ControllerClient, error) {
+func NewControllerClient(address, volumeName, instanceName string) (*ControllerClient, error) {
 	getControllerServiceContext := func(serviceUrl string) (ControllerServiceContext, error) {
-		connection, err := grpc.Dial(serviceUrl, grpc.WithInsecure())
+		connection, err := grpc.Dial(serviceUrl, grpc.WithInsecure(), withIdentityValidationInterceptor(volumeName, instanceName))
 		if err != nil {
 			return ControllerServiceContext{}, errors.Wrapf(err, "cannot connect to ControllerService %v", serviceUrl)
 		}
@@ -64,6 +65,23 @@ func NewControllerClient(address string) (*ControllerClient, error) {
 		serviceURL:               serviceURL,
 		ControllerServiceContext: serviceContext,
 	}, nil
+}
+
+func withIdentityValidationInterceptor(volumeName, instanceName string) grpc.DialOption {
+	return grpc.WithUnaryInterceptor(identityValidationInterceptor(volumeName, instanceName))
+}
+
+func identityValidationInterceptor(volumeName, instanceName string) grpc.UnaryClientInterceptor {
+	// Use a closure to remember the correct volumeName and/or instanceName.
+	return func(ctx context.Context, method string, req any, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		if volumeName != "" {
+			ctx = metadata.AppendToOutgoingContext(ctx, "volume-name", volumeName)
+		}
+		if instanceName != "" {
+			ctx = metadata.AppendToOutgoingContext(ctx, "instance-name", instanceName)
+		}
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
 }
 
 func GetVolumeInfo(v *ptypes.Volume) *types.VolumeInfo {
