@@ -182,6 +182,18 @@ func RebuildStatusCmd() cli.Command {
 	return cli.Command{
 		Name:      "replica-rebuild-status",
 		ShortName: "rebuild-status",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "controller-instance-name",
+				Required: false,
+				Usage:    "Name of the controller instance (for validation purposes)",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := rebuildStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running replica rebuild status")
@@ -192,10 +204,11 @@ func RebuildStatusCmd() cli.Command {
 
 func rebuildStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.GlobalString("volume-name")
+	volumeName := c.String("volume-name")
+	controllerInstanceName := c.String("controller-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, controllerInstanceName)
 	if err != nil {
 		return err
 	}
