@@ -92,8 +92,7 @@ func exportVolume(c *cli.Context) error {
 		return fmt.Errorf("cannot find a RW replica for volume exporting")
 	}
 
-	volumeName := c.GlobalString("volume-name")
-	rClient, err := replicaclient.NewReplicaClient(r.Address, volumeName, "") // TODO
+	rClient, err := replicaclient.NewReplicaClient(r.Address, "", "") // TODO
 	if err != nil {
 		return err
 	}

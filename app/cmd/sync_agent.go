@@ -92,10 +92,9 @@ func startSyncAgent(c *cli.Context) error {
 
 func doReset(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.GlobalString("volume-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
+	task, err := sync.NewTask(ctx, url, "", "") // TODO
 	if err != nil {
 		return err
 	}
