@@ -58,6 +58,7 @@ type SyncAgentServer struct {
 	isCloning       bool
 	replicaAddress  string
 	volumeName      string
+	instanceName    string
 
 	BackupList       *BackupList
 	SnapshotHashList *SnapshotHashList
@@ -128,7 +129,7 @@ func (cs *CloneStatus) UpdateSyncFileProgress(size int64) {
 	cs.Progress = int((float32(cs.processedSize) / float32(cs.totalSize)) * 100)
 }
 
-func NewSyncAgentServer(startPort, endPort int, replicaAddress string, volumeName string) *SyncAgentServer {
+func NewSyncAgentServer(startPort, endPort int, replicaAddress, volumeName, instanceName string) *SyncAgentServer {
 	return &SyncAgentServer{
 		currentPort:     startPort,
 		startPort:       startPort,
@@ -136,6 +137,7 @@ func NewSyncAgentServer(startPort, endPort int, replicaAddress string, volumeNam
 		processesByPort: map[int]string{},
 		replicaAddress:  replicaAddress,
 		volumeName:      volumeName,
+		instanceName:    instanceName,
 
 		BackupList:       &BackupList{},
 		SnapshotHashList: &SnapshotHashList{},
@@ -1031,7 +1033,7 @@ func (s *SyncAgentServer) purgeSnapshots() (err error) {
 		}
 	}()
 
-	replicaClient, err := replicaclient.NewReplicaClient(s.replicaAddress, s.volumeName, "") // TODO
+	replicaClient, err := replicaclient.NewReplicaClient(s.replicaAddress, s.volumeName, s.instanceName)
 	if err != nil {
 		return err
 	}
