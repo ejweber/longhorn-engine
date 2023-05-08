@@ -231,6 +231,18 @@ func VerifyRebuildReplicaCmd() cli.Command {
 	return cli.Command{
 		Name:      "verify-rebuild-replica",
 		ShortName: "verify-rebuild",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "controller-instance-name",
+				Required: false,
+				Usage:    "Name of the controller instance (for validation purposes)",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := verifyRebuildReplica(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running verify rebuild replica command")
@@ -245,11 +257,12 @@ func verifyRebuildReplica(c *cli.Context) error {
 	}
 	address := c.Args()[0]
 	url := c.GlobalString("url")
-	volumeName := c.GlobalString("volume-name")
+	volumeName := c.String("volume-name")
+	controllerInstanceName := c.String("controller-instance-name")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, volumeName, "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, controllerInstanceName)
 	if err != nil {
 		return err
 	}
