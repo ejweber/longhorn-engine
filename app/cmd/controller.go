@@ -86,6 +86,7 @@ func ControllerCmd() cli.Command {
 			cli.StringFlag{
 				Name:  "instance-name",
 				Value: "",
+				Usage: "Name of the instance (for validation purposes)",
 			},
 		},
 		Action: func(c *cli.Context) {
