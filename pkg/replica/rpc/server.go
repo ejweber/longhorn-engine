@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -46,16 +47,22 @@ func identityValidationInterceptor(volumeName, instanceName string) grpc.UnarySe
 		if ok {
 			incomingVolumeName, ok := md["volume-name"]
 			// Only refuse to serve if both client and server provide validation information.
-			if ok && volumeName != "" && incomingVolumeName[0] != volumeName {
-				return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check replica address")
+			if ok && volumeName != "" {
+				if incomingVolumeName[0] != volumeName {
+					return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check replica address")
+				}
+				logrus.WithFields(logrus.Fields{"method": info.FullMethod, "volumeName": incomingVolumeName[0]}).Info("Validated gRPC metadata")
 			}
 		}
 
 		if ok {
 			incomingInstanceName, ok := md["instance-name"]
 			// Only refuse to serve if both client and server provide validation information.
-			if ok && instanceName != "" && incomingInstanceName[0] != instanceName {
-				return nil, status.Errorf(codes.InvalidArgument, "Incorrect instance name; check replica address")
+			if ok && instanceName != "" {
+				if incomingInstanceName[0] != instanceName {
+					return nil, status.Errorf(codes.InvalidArgument, "Incorrect instance name; check replica address")
+				}
+				logrus.WithFields(logrus.Fields{"method": info.FullMethod, "instanceName": incomingInstanceName[0]}).Info("Validated gRPC metadata")
 			}
 		}
 
