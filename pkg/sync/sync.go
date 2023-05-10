@@ -402,11 +402,7 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, address, instance
 	if err != nil {
 		return err
 	}
-	// For this one, we can actually get the volume name here.
-	// However, we have to pass it around a bunch and this is not a very general solution.
-	// Probably better to have it as an attribute of a task.
 
-	// This is why we can still add a replica if the engine has none.
 	if volume.ReplicaCount == 0 {
 		return t.client.VolumeStart(volumeSize, volumeCurrentSize, address)
 	}
