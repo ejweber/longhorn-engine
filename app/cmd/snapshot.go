@@ -75,6 +75,18 @@ func SnapshotRevertCmd() cli.Command {
 func SnapshotRmCmd() cli.Command {
 	return cli.Command{
 		Name: "rm",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "engine-instance-name",
+				Required: false,
+				Usage:    "Name of the engine instance (for validation purposes)",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := rmSnapshot(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running rm snapshot command")
@@ -91,6 +103,16 @@ func SnapshotPurgeCmd() cli.Command {
 				Name:  "skip-if-in-progress",
 				Usage: "set to mute errors if replica is already purging",
 			},
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "engine-instance-name",
+				Required: false,
+				Usage:    "Name of the engine instance (for validation purposes)",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := purgeSnapshot(c); err != nil {
@@ -103,6 +125,18 @@ func SnapshotPurgeCmd() cli.Command {
 func SnapshotPurgeStatusCmd() cli.Command {
 	return cli.Command{
 		Name: "purge-status",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "engine-instance-name",
+				Required: false,
+				Usage:    "Name of the engine instance (for validation purposes)",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := purgeSnapshotStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running snapshot purge status command")
@@ -183,6 +217,16 @@ func SnapshotHashCmd() cli.Command {
 				Name:  "rehash",
 				Usage: "Rehash snapshot disk file",
 			},
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "engine-instance-name",
+				Required: false,
+				Usage:    "Name of the engine instance (for validation purposes)",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := hashSnapshot(c); err != nil {
@@ -195,6 +239,18 @@ func SnapshotHashCmd() cli.Command {
 func SnapshotHashCancelCmd() cli.Command {
 	return cli.Command{
 		Name: "hash-cancel",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "engine-instance-name",
+				Required: false,
+				Usage:    "Name of the engine instance (for validation purposes)",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := cancelHashSnapshot(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running cancel hashing snapshot command")
@@ -206,6 +262,18 @@ func SnapshotHashCancelCmd() cli.Command {
 func SnapshotHashStatusCmd() cli.Command {
 	return cli.Command{
 		Name: "hash-status",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "engine-instance-name",
+				Required: false,
+				Usage:    "Name of the engine instance (for validation purposes)",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := hashSnapshotStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running snapshot hash status command")
@@ -269,9 +337,11 @@ func revertSnapshot(c *cli.Context) error {
 
 func rmSnapshot(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.String("volume-name")
+	engineInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
 	if err != nil {
 		return err
 	}
@@ -289,9 +359,11 @@ func rmSnapshot(c *cli.Context) error {
 
 func purgeSnapshot(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.String("volume-name")
+	engineInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
 	if err != nil {
 		return err
 	}
@@ -306,9 +378,11 @@ func purgeSnapshot(c *cli.Context) error {
 
 func purgeSnapshotStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.String("volume-name")
+	engineInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
 	if err != nil {
 		return err
 	}
@@ -473,9 +547,11 @@ func hashSnapshot(c *cli.Context) error {
 	snapshotName := c.Args()[0]
 
 	url := c.GlobalString("url")
+	volumeName := c.String("volume-name")
+	engineInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
 	if err != nil {
 		return err
 	}
@@ -497,9 +573,11 @@ func cancelHashSnapshot(c *cli.Context) error {
 	snapshotName := c.Args()[0]
 
 	url := c.GlobalString("url")
+	volumeName := c.String("volume-name")
+	engineInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
 	if err != nil {
 		return err
 	}
@@ -519,9 +597,11 @@ func hashSnapshotStatus(c *cli.Context) error {
 	snapshotName := c.Args()[0]
 
 	url := c.GlobalString("url")
+	volumeName := c.String("volume-name")
+	engineInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
 	if err != nil {
 		return err
 	}

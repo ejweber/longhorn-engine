@@ -267,7 +267,8 @@ func (t *Task) PurgeSnapshotStatus() (map[string]*SnapshotPurgeStatus, error) {
 }
 
 func (t *Task) isRebuilding(replicaInController *types.ControllerReplicaInfo) (bool, error) {
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
+	// We don't know the replica's instanceName, so create a client without it.
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "")
 	if err != nil {
 		return false, err
 	}
@@ -282,7 +283,8 @@ func (t *Task) isRebuilding(replicaInController *types.ControllerReplicaInfo) (b
 }
 
 func (t *Task) isHashingSnapshot(replicaInController *types.ControllerReplicaInfo) (bool, error) {
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
+	// We don't know the replica's instanceName, so create a client without it.
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "")
 	if err != nil {
 		return false, err
 	}
@@ -297,7 +299,8 @@ func (t *Task) isHashingSnapshot(replicaInController *types.ControllerReplicaInf
 }
 
 func (t *Task) isPurging(replicaInController *types.ControllerReplicaInfo) (bool, error) {
-	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "") // TODO
+	// We don't know the replica's instanceName, so create a client without it.
+	repClient, err := replicaClient.NewReplicaClient(replicaInController.Address, t.volumeName, "")
 	if err != nil {
 		return false, err
 	}

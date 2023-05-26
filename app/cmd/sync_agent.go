@@ -57,6 +57,18 @@ func SyncAgentCmd() cli.Command {
 func SyncAgentServerResetCmd() cli.Command {
 	return cli.Command{
 		Name: "sync-agent-server-reset",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "volume-name",
+				Required: false,
+				Usage:    "Name of the volume (for validation purposes)",
+			},
+			cli.StringFlag{
+				Name:     "engine-instance-name",
+				Required: false,
+				Usage:    "Name of the engine instance (for validation purposes)",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := doReset(c); err != nil {
 				logrus.WithError(err).Fatal("Error running sync-agent-server-reset command")
@@ -103,9 +115,11 @@ func startSyncAgent(c *cli.Context) error {
 
 func doReset(c *cli.Context) error {
 	url := c.GlobalString("url")
+	volumeName := c.String("volume-name")
+	engineInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	task, err := sync.NewTask(ctx, url, "", "") // TODO
+	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
 	if err != nil {
 		return err
 	}
