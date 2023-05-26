@@ -59,11 +59,6 @@ func ReplicaCmd() cli.Command {
 				Usage:  "To disable revision counter for every write",
 			},
 			cli.StringFlag{
-				Name:  "volume-name",
-				Value: "",
-				Usage: "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
 				Name:  "data-server-protocol",
 				Value: "tcp",
 				Usage: "Specify the data-server protocol. Available options are \"tcp\" and \"unix\"",

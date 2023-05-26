@@ -42,16 +42,6 @@ func AddReplicaCmd() cli.Command {
 				Usage:    "HTTP client timeout for replica file sync server",
 			},
 			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-			cli.StringFlag{
 				Name:     "replica-instance-name",
 				Required: false,
 				Usage:    "Name of the replica instance (for validation purposes)",
@@ -122,16 +112,6 @@ func StartWithReplicasCmd() cli.Command {
 				Name:  "current-size",
 				Usage: "Volume current size in bytes or human readable 42kb, 42mb, 42gb",
 			},
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if err := startWithReplicas(c); err != nil {
@@ -183,16 +163,6 @@ func RebuildStatusCmd() cli.Command {
 		Name:      "replica-rebuild-status",
 		ShortName: "rebuild-status",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if err := rebuildStatus(c); err != nil {
@@ -231,18 +201,6 @@ func VerifyRebuildReplicaCmd() cli.Command {
 	return cli.Command{
 		Name:      "verify-rebuild-replica",
 		ShortName: "verify-rebuild",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if err := verifyRebuildReplica(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running verify rebuild replica command")

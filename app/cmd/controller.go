@@ -201,5 +201,7 @@ func startController(c *cli.Context) error {
 
 func getControllerClient(c *cli.Context) (*client.ControllerClient, error) {
 	url := c.GlobalString("url")
-	return client.NewControllerClient(url, "", "") // TODO
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
+	return client.NewControllerClient(url, volumeName, engineInstanceName)
 }

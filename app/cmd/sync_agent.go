@@ -36,11 +36,6 @@ func SyncAgentCmd() cli.Command {
 				Usage: "specify replica address",
 			},
 			cli.StringFlag{
-				Name:  "volume-name",
-				Value: "",
-				Usage: "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
 				Name:  "instance-name",
 				Value: "",
 				Usage: "Name of the instance (for validation purposes)",
@@ -57,18 +52,6 @@ func SyncAgentCmd() cli.Command {
 func SyncAgentServerResetCmd() cli.Command {
 	return cli.Command{
 		Name: "sync-agent-server-reset",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if err := doReset(c); err != nil {
 				logrus.WithError(err).Fatal("Error running sync-agent-server-reset command")

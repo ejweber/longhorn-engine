@@ -75,18 +75,6 @@ func SnapshotRevertCmd() cli.Command {
 func SnapshotRmCmd() cli.Command {
 	return cli.Command{
 		Name: "rm",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if err := rmSnapshot(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running rm snapshot command")
@@ -103,16 +91,6 @@ func SnapshotPurgeCmd() cli.Command {
 				Name:  "skip-if-in-progress",
 				Usage: "set to mute errors if replica is already purging",
 			},
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if err := purgeSnapshot(c); err != nil {
@@ -125,18 +103,6 @@ func SnapshotPurgeCmd() cli.Command {
 func SnapshotPurgeStatusCmd() cli.Command {
 	return cli.Command{
 		Name: "purge-status",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if err := purgeSnapshotStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running snapshot purge status command")
@@ -179,6 +145,11 @@ func SnapshotCloneCmd() cli.Command {
 				Name:  "from-controller-address",
 				Usage: "Specify the address of the engine controller of the source volume",
 			},
+			cli.StringFlag{
+				Name:     "from-controller-instance-name",
+				Required: false,
+				Usage:    "Specify the name of the engine controller instance of the source volume (for validation purposes)",
+			},
 			cli.BoolFlag{
 				Name:  "export-backing-image-if-exist",
 				Usage: "Specify if the backing image should be exported if it exists",
@@ -217,16 +188,6 @@ func SnapshotHashCmd() cli.Command {
 				Name:  "rehash",
 				Usage: "Rehash snapshot disk file",
 			},
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if err := hashSnapshot(c); err != nil {
@@ -239,18 +200,6 @@ func SnapshotHashCmd() cli.Command {
 func SnapshotHashCancelCmd() cli.Command {
 	return cli.Command{
 		Name: "hash-cancel",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if err := cancelHashSnapshot(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running cancel hashing snapshot command")
@@ -262,18 +211,6 @@ func SnapshotHashCancelCmd() cli.Command {
 func SnapshotHashStatusCmd() cli.Command {
 	return cli.Command{
 		Name: "hash-status",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if err := hashSnapshotStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running snapshot hash status command")
@@ -506,7 +443,9 @@ func cloneSnapshot(c *cli.Context) error {
 	}
 	defer controllerClient.Close()
 
-	fromControllerClient, err := client.NewControllerClient(fromControllerAddress, "", "") // TODO
+	volumeName := c.GlobalString("volume-name")
+	fromControllerEngineInstanceName := c.String("from-controller-instance-name")
+	fromControllerClient, err := client.NewControllerClient(fromControllerAddress, volumeName, fromControllerEngineInstanceName)
 	if err != nil {
 		return err
 	}

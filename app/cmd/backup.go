@@ -76,16 +76,6 @@ func BackupCreateCmd() cli.Command {
 				Name:  "storage-class-name",
 				Usage: "Storage class name of the pv binding with the volume",
 			},
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if err := createBackup(c); err != nil {
@@ -201,16 +191,6 @@ func BackupRestoreCmd() cli.Command {
 				Value: 1,
 				Usage: "Concurrent restore worker threads",
 			},
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if err := restoreBackup(c); err != nil {
@@ -235,18 +215,6 @@ func RestoreStatusCmd() cli.Command {
 	return cli.Command{
 		Name:  "restore-status",
 		Usage: "Check if restore operation is currently going on",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "volume-name",
-				Required: false,
-				Usage:    "Name of the volume (for validation purposes)",
-			},
-			cli.StringFlag{
-				Name:     "engine-instance-name",
-				Required: false,
-				Usage:    "Name of the engine instance (for validation purposes)",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if err := restoreStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running restore backup command")
