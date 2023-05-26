@@ -57,7 +57,8 @@ func lsReplica(c *cli.Context) error {
 }
 
 func getChain(address, volumeName string) ([]string, error) {
-	repClient, err := replicaClient.NewReplicaClient(address, volumeName, "") // TODO
+	// We don't know the replica's instanceName, so create a client without it.
+	repClient, err := replicaClient.NewReplicaClient(address, volumeName, "")
 	if err != nil {
 		return nil, err
 	}
