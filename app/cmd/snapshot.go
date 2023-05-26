@@ -408,7 +408,8 @@ func infoSnapshot(c *cli.Context) error {
 		return err
 	}
 
-	outputDisks, err := sync.GetSnapshotsInfo(replicas)
+	volumeName := c.GlobalString("volume-name")
+	outputDisks, err := sync.GetSnapshotsInfo(replicas, volumeName)
 	if err != nil {
 		return err
 	}
@@ -451,7 +452,8 @@ func cloneSnapshot(c *cli.Context) error {
 	}
 	defer fromControllerClient.Close()
 
-	if err := sync.CloneSnapshot(controllerClient, fromControllerClient, snapshotName, exportBackingImageIfExist, fileSyncHTTPClientTimeout); err != nil {
+	if err := sync.CloneSnapshot(controllerClient, fromControllerClient, volumeName, snapshotName,
+		exportBackingImageIfExist, fileSyncHTTPClientTimeout); err != nil {
 		return err
 	}
 	return nil
@@ -464,7 +466,8 @@ func cloneSnapshotStatus(c *cli.Context) error {
 	}
 	defer controllerClient.Close()
 
-	statusMap, err := sync.CloneStatus(controllerClient)
+	volumeName := c.GlobalString("volume-name")
+	statusMap, err := sync.CloneStatus(controllerClient, volumeName)
 	if err != nil {
 		return err
 	}

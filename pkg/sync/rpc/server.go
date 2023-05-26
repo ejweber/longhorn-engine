@@ -430,8 +430,9 @@ func (s *SyncAgentServer) FilesSync(ctx context.Context, req *ptypes.FilesSyncRe
 		}
 	}()
 
-	// TODO: How can we know the volume name here?
-	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress, "", "") // TODO
+	// We generally don't know the from replica's instanceName since it is arbitrarily chosen from candidate addresses
+	// stored in the controller. Don't modify FilesSyncRequest to contain it, and create a client without it.
+	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress, s.volumeName, "")
 	if err != nil {
 		return nil, err
 	}
@@ -522,7 +523,9 @@ func (s *SyncAgentServer) ReplicaRebuildStatus(ctx context.Context, req *empty.E
 }
 
 func (s *SyncAgentServer) SnapshotClone(ctx context.Context, req *ptypes.SnapshotCloneRequest) (res *empty.Empty, err error) {
-	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress, s.volumeName, "") // TODO
+	// We generally don't know the from replica's instanceName since it is arbitrarily chosen from candidate addresses
+	// stored in the controller. Do don't modify SnapshotCloneRequest to contain it, and create a client without it.
+	fromClient, err := replicaclient.NewReplicaClient(req.FromAddress, s.volumeName, "")
 	if err != nil {
 		return nil, err
 	}

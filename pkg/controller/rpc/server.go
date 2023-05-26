@@ -252,7 +252,7 @@ func (cs *ControllerServer) ReplicaUpdate(ctx context.Context, req *ptypes.Contr
 }
 
 func (cs *ControllerServer) ReplicaPrepareRebuild(ctx context.Context, req *ptypes.ReplicaAddress) (*ptypes.ReplicaPrepareRebuildReply, error) {
-	list, err := cs.c.PrepareRebuildReplica(req.Address)
+	list, err := cs.c.PrepareRebuildReplica(req.Address, req.InstanceName)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (cs *ControllerServer) ReplicaPrepareRebuild(ctx context.Context, req *ptyp
 }
 
 func (cs *ControllerServer) ReplicaVerifyRebuild(ctx context.Context, req *ptypes.ReplicaAddress) (*ptypes.ControllerReplica, error) {
-	if err := cs.c.VerifyRebuildReplica(req.Address); err != nil {
+	if err := cs.c.VerifyRebuildReplica(req.Address, req.InstanceName); err != nil {
 		return nil, err
 	}
 
