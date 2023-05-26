@@ -162,8 +162,6 @@ func RebuildStatusCmd() cli.Command {
 	return cli.Command{
 		Name:      "replica-rebuild-status",
 		ShortName: "rebuild-status",
-		Flags: []cli.Flag{
-		},
 		Action: func(c *cli.Context) {
 			if err := rebuildStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Error running replica rebuild status")
