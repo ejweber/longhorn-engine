@@ -47,9 +47,9 @@ func AddReplicaCmd() cli.Command {
 				Usage:    "Name of the volume (for validation purposes)",
 			},
 			cli.StringFlag{
-				Name:     "controller-instance-name",
+				Name:     "engine-instance-name",
 				Required: false,
-				Usage:    "Name of the controller instance (for validation purposes)",
+				Usage:    "Name of the engine instance (for validation purposes)",
 			},
 			cli.StringFlag{
 				Name:     "replica-instance-name",
@@ -73,7 +73,7 @@ func addReplica(c *cli.Context) error {
 
 	url := c.GlobalString("url")
 	volumeName := c.String("volume-name")
-	controllerInstanceName := c.String("controller-instance-name")
+	controllerInstanceName := c.String("engine-instance-name")
 	replicaInstanceName := c.String("replica-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -128,9 +128,9 @@ func StartWithReplicasCmd() cli.Command {
 				Usage:    "Name of the volume (for validation purposes)",
 			},
 			cli.StringFlag{
-				Name:     "controller-instance-name",
+				Name:     "engine-instance-name",
 				Required: false,
-				Usage:    "Name of the controller instance (for validation purposes)",
+				Usage:    "Name of the engine instance (for validation purposes)",
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -149,7 +149,7 @@ func startWithReplicas(c *cli.Context) error {
 
 	url := c.GlobalString("url")
 	volumeName := c.String("volume-name")
-	controllerInstanceName := c.String("controller-instance-name")
+	controllerInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, controllerInstanceName)
@@ -189,9 +189,9 @@ func RebuildStatusCmd() cli.Command {
 				Usage:    "Name of the volume (for validation purposes)",
 			},
 			cli.StringFlag{
-				Name:     "controller-instance-name",
+				Name:     "engine-instance-name",
 				Required: false,
-				Usage:    "Name of the controller instance (for validation purposes)",
+				Usage:    "Name of the engine instance (for validation purposes)",
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -205,7 +205,7 @@ func RebuildStatusCmd() cli.Command {
 func rebuildStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
 	volumeName := c.String("volume-name")
-	controllerInstanceName := c.String("controller-instance-name")
+	controllerInstanceName := c.String("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, controllerInstanceName)
@@ -238,9 +238,9 @@ func VerifyRebuildReplicaCmd() cli.Command {
 				Usage:    "Name of the volume (for validation purposes)",
 			},
 			cli.StringFlag{
-				Name:     "controller-instance-name",
+				Name:     "engine-instance-name",
 				Required: false,
-				Usage:    "Name of the controller instance (for validation purposes)",
+				Usage:    "Name of the engine instance (for validation purposes)",
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -258,7 +258,7 @@ func verifyRebuildReplica(c *cli.Context) error {
 	address := c.Args()[0]
 	url := c.GlobalString("url")
 	volumeName := c.String("volume-name")
-	controllerInstanceName := c.String("controller-instance-name")
+	controllerInstanceName := c.String("engine-instance-name")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
