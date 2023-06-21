@@ -112,7 +112,7 @@ func startReplica(c *cli.Context) error {
 		}
 	}
 
-	volumeName := c.String("volume-name")
+	volumeName := c.GlobalString("volume-name")
 	instanceName := c.String("instance-name")
 	dataServerProtocol := c.String("data-server-protocol")
 

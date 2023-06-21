@@ -274,8 +274,8 @@ func revertSnapshot(c *cli.Context) error {
 
 func rmSnapshot(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -296,8 +296,8 @@ func rmSnapshot(c *cli.Context) error {
 
 func purgeSnapshot(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -315,8 +315,8 @@ func purgeSnapshot(c *cli.Context) error {
 
 func purgeSnapshotStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -344,6 +344,7 @@ func lsSnapshot(c *cli.Context) error {
 		return err
 	}
 	defer controllerClient.Close()
+	volumeName := c.GlobalString("volume-name")
 
 	replicas, err := controllerClient.ReplicaList()
 	if err != nil {
@@ -359,7 +360,7 @@ func lsSnapshot(c *cli.Context) error {
 
 		if first {
 			first = false
-			chain, err := getChain(r.Address, "") // TODO
+			chain, err := getChain(r.Address, volumeName)
 			if err != nil {
 				return err
 			}
@@ -372,7 +373,7 @@ func lsSnapshot(c *cli.Context) error {
 			continue
 		}
 
-		chain, err := getChain(r.Address, "") // TODO
+		chain, err := getChain(r.Address, volumeName)
 		if err != nil {
 			return err
 		}
@@ -489,8 +490,8 @@ func hashSnapshot(c *cli.Context) error {
 	snapshotName := c.Args()[0]
 
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -515,8 +516,8 @@ func cancelHashSnapshot(c *cli.Context) error {
 	snapshotName := c.Args()[0]
 
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -539,8 +540,8 @@ func hashSnapshotStatus(c *cli.Context) error {
 	snapshotName := c.Args()[0]
 
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)

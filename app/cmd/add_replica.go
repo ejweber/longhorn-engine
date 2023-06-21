@@ -62,8 +62,8 @@ func addReplica(c *cli.Context) error {
 	replica := c.Args()[0]
 
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	replicaInstanceName := c.String("replica-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -128,8 +128,8 @@ func startWithReplicas(c *cli.Context) error {
 	replicas := c.Args()
 
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -172,8 +172,8 @@ func RebuildStatusCmd() cli.Command {
 
 func rebuildStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -213,8 +213,8 @@ func verifyRebuildReplica(c *cli.Context) error {
 	}
 	address := c.Args()[0]
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

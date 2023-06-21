@@ -64,7 +64,7 @@ func startSyncAgent(c *cli.Context) error {
 	listenPort := c.String("listen")
 	portRange := c.String("listen-port-range")
 	replicaAddress := c.String("replica")
-	volumeName := c.String("volume-name")
+	volumeName := c.GlobalString("volume-name")
 	instanceName := c.String("instance-name")
 
 	parts := strings.Split(portRange, "-")
@@ -98,8 +98,8 @@ func startSyncAgent(c *cli.Context) error {
 
 func doReset(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)

@@ -268,8 +268,8 @@ func createBackup(c *cli.Context) error {
 	}
 
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -293,8 +293,8 @@ func createBackup(c *cli.Context) error {
 
 func restoreBackup(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)
@@ -323,8 +323,8 @@ func restoreBackup(c *cli.Context) error {
 
 func restoreStatus(c *cli.Context) error {
 	url := c.GlobalString("url")
-	volumeName := c.String("volume-name")
-	engineInstanceName := c.String("engine-instance-name")
+	volumeName := c.GlobalString("volume-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	task, err := sync.NewTask(ctx, url, volumeName, engineInstanceName)

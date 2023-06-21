@@ -30,6 +30,7 @@ func lsReplica(c *cli.Context) error {
 		return err
 	}
 	defer controllerClient.Close()
+	volumeName := c.GlobalString("volume-name")
 
 	reps, err := controllerClient.ReplicaList()
 	if err != nil {
@@ -45,7 +46,7 @@ func lsReplica(c *cli.Context) error {
 			continue
 		}
 		chain := interface{}("")
-		chainList, err := getChain(r.Address, "") // TODO
+		chainList, err := getChain(r.Address, volumeName)
 		if err == nil {
 			chain = chainList
 		}
