@@ -51,21 +51,25 @@ func identityValidationInterceptor(volumeName, instanceName string) grpc.UnarySe
 			incomingVolumeName, ok := md["volume-name"]
 			// Only refuse to serve if both client and server provide validation information.
 			if ok && volumeName != "" {
+				log := logrus.WithFields(logrus.Fields{"method": info.FullMethod,
+					"clientVolumeName": incomingVolumeName[0], "serverVolumeName": volumeName})
 				if incomingVolumeName[0] != volumeName {
+					log.Error("Invalid gRPC metadata")
 					return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check controller address")
 				}
-				logrus.WithFields(logrus.Fields{"method": info.FullMethod, "volumeName": incomingVolumeName[0]}).Info("Validated gRPC metadata")
+				log.Debug("Valid gRPC metadata")
 			}
-		}
 
-		if ok {
 			incomingInstanceName, ok := md["instance-name"]
 			// Only refuse to serve if both client and server provide validation information.
 			if ok && instanceName != "" {
+				log := logrus.WithFields(logrus.Fields{"method": info.FullMethod,
+					"clientInstanceName": incomingInstanceName[0], "serverInstanceName": instanceName})
 				if incomingInstanceName[0] != instanceName {
+					log.Error("Invalid gRPC metadata")
 					return nil, status.Errorf(codes.InvalidArgument, "Incorrect instance name; check controller address")
 				}
-				logrus.WithFields(logrus.Fields{"method": info.FullMethod, "instanceName": incomingInstanceName[0]}).Info("Validated gRPC metadata")
+				log.Debug("Valid gRPC metadata")
 			}
 		}
 
