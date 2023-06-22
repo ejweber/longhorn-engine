@@ -98,14 +98,12 @@ func syncFile(from, to, fromAddress, toAddress, volumeName, toInstanceName strin
 		to = from
 	}
 
-	// TODO: How can we know volume name here?
 	fromClient, err := client.NewReplicaClient(fromAddress, volumeName, "")
 	if err != nil {
 		return errors.Wrapf(err, "cannot get replica client for %v", fromAddress)
 	}
 	defer fromClient.Close()
 
-	// TODO: How can we know volume name here?
 	toClient, err := client.NewReplicaClient(toAddress, volumeName, toInstanceName)
 	if err != nil {
 		return errors.Wrapf(err, "cannot get replica client for %v", toAddress)

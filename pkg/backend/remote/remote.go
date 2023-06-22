@@ -262,7 +262,6 @@ func (r *Remote) SetUnmapMarkSnapChainRemoved(enabled bool) error {
 }
 
 func (r *Remote) info() (*types.ReplicaInfo, error) {
-	// The controller dials direct in this file (in seven different locations). We could put another grpc interceptor here as well?
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)

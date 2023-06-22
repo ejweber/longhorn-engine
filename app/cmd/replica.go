@@ -69,9 +69,9 @@ func ReplicaCmd() cli.Command {
 				Usage:  "To mark the current disk chain as removed before starting unmap",
 			},
 			cli.StringFlag{
-				Name:  "instance-name",
+				Name:  "replica-instance-name",
 				Value: "",
-				Usage: "Name of the instance (for validation purposes)",
+				Usage: "Name of the replica instance (for validation purposes)",
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -113,7 +113,7 @@ func startReplica(c *cli.Context) error {
 	}
 
 	volumeName := c.GlobalString("volume-name")
-	instanceName := c.String("instance-name")
+	replicaInstanceName := c.String("replica-instance-name")
 	dataServerProtocol := c.String("data-server-protocol")
 
 	controlAddress, dataAddress, syncAddress, syncPort, err :=
@@ -132,7 +132,7 @@ func startReplica(c *cli.Context) error {
 			return
 		}
 
-		server := replicarpc.NewReplicaServer(volumeName, instanceName, s)
+		server := replicarpc.NewReplicaServer(volumeName, replicaInstanceName, s)
 
 		logrus.Infof("Listening on gRPC Replica server %s", controlAddress)
 		err = server.Serve(listen)

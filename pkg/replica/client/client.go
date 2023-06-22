@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/longhorn/longhorn-engine/pkg/types"
 	"github.com/longhorn/longhorn-engine/pkg/util"
@@ -87,29 +86,12 @@ func NewReplicaClient(address, volumeName, instanceName string) (*ReplicaClient,
 	}, nil
 }
 
-func (c *ReplicaClient) withIdentityValidationInterceptor() grpc.DialOption {
-	return grpc.WithUnaryInterceptor(c.identityValidationInterceptor())
-}
-
-func (c *ReplicaClient) identityValidationInterceptor() grpc.UnaryClientInterceptor {
-	// Use a closure to remember the correct volumeName.
-	return func(ctx context.Context, method string, req any, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		if c.volumeName != "" {
-			ctx = metadata.AppendToOutgoingContext(ctx, "volume-name", c.volumeName)
-		}
-		if c.instanceName != "" {
-			ctx = metadata.AppendToOutgoingContext(ctx, "instance-name", c.instanceName)
-		}
-
-		return invoker(ctx, method, req, reply, cc, opts...)
-	}
-}
-
 // getReplicaServiceClient lazily initialize the service client, this is to reduce the connection count
 // for the longhorn-manager which executes these command as binaries invocations
 func (c *ReplicaClient) getReplicaServiceClient() (ptypes.ReplicaServiceClient, error) {
 	err := c.replicaServiceContext.once.Do(func() error {
-		cc, err := grpc.Dial(c.replicaServiceURL, grpc.WithInsecure(), c.withIdentityValidationInterceptor())
+		cc, err := grpc.Dial(c.replicaServiceURL, grpc.WithInsecure(),
+			ptypes.WithIdentityValidationClientInterceptor(c.volumeName, c.instanceName))
 		if err != nil {
 			return err
 		}
@@ -129,7 +111,8 @@ func (c *ReplicaClient) getReplicaServiceClient() (ptypes.ReplicaServiceClient, 
 // for the longhorn-manager which executes these command as binaries invocations
 func (c *ReplicaClient) getSyncServiceClient() (ptypes.SyncAgentServiceClient, error) {
 	err := c.syncServiceContext.once.Do(func() error {
-		cc, err := grpc.Dial(c.syncAgentServiceURL, grpc.WithInsecure(), c.withIdentityValidationInterceptor())
+		cc, err := grpc.Dial(c.syncAgentServiceURL, grpc.WithInsecure(),
+			ptypes.WithIdentityValidationClientInterceptor(c.volumeName, c.instanceName))
 		if err != nil {
 			return err
 		}

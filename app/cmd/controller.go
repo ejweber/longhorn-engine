@@ -83,11 +83,6 @@ func ControllerCmd() cli.Command {
 				Value:    5,
 				Usage:    "HTTP client timeout for replica file sync server",
 			},
-			cli.StringFlag{
-				Name:  "instance-name",
-				Value: "",
-				Usage: "Name of the instance (for validation purposes)",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if err := startController(c); err != nil {
@@ -101,9 +96,10 @@ func startController(c *cli.Context) error {
 	if c.NArg() == 0 {
 		return errors.New("volume name is required")
 	}
-	name := c.Args()[0]
+	volumeName := c.Args()[0]
+	// The global "--volume-name" flag is ignored here. It is redundant with the above required positional argument.
 
-	if !util.ValidVolumeName(name) {
+	if !util.ValidVolumeName(volumeName) {
 		return errors.New("invalid target name")
 	}
 
@@ -117,7 +113,7 @@ func startController(c *cli.Context) error {
 	unmapMarkSnapChainRemoved := c.Bool("unmap-mark-snap-chain-removed")
 	dataServerProtocol := c.String("data-server-protocol")
 	fileSyncHTTPClientTimeout := c.Int("file-sync-http-client-timeout")
-	instanceName := c.String("instance-name")
+	engineInstanceName := c.GlobalString("engine-instance-name")
 
 	size := c.String("size")
 	if size == "" {
@@ -164,8 +160,8 @@ func startController(c *cli.Context) error {
 	}
 
 	logrus.Infof("Creating volume %v controller with iSCSI target request timeout %v and engine to replica(s) timeout %v",
-		name, iscsiTargetRequestTimeout, engineReplicaTimeout)
-	control := controller.NewController(name, dynamic.New(factories), frontend, isUpgrade, disableRevCounter, salvageRequested,
+		volumeName, iscsiTargetRequestTimeout, engineReplicaTimeout)
+	control := controller.NewController(volumeName, dynamic.New(factories), frontend, isUpgrade, disableRevCounter, salvageRequested,
 		unmapMarkSnapChainRemoved, iscsiTargetRequestTimeout, engineReplicaTimeout, types.DataServerProtocol(dataServerProtocol),
 		fileSyncHTTPClientTimeout)
 
@@ -173,7 +169,7 @@ func startController(c *cli.Context) error {
 	control.ShutdownWG.Add(1)
 	addShutdown(func() (err error) {
 		defer control.ShutdownWG.Done()
-		logrus.Debugf("Starting to execute shutdown function for the engine controller of volume %v", name)
+		logrus.Debugf("Starting to execute shutdown function for the engine controller of volume %v", volumeName)
 		return control.Shutdown()
 	})
 
@@ -193,7 +189,7 @@ func startController(c *cli.Context) error {
 	}
 
 	control.GRPCAddress = util.GetGRPCAddress(listen)
-	control.GRPCServer = controllerrpc.GetControllerGRPCServer(name, instanceName, control)
+	control.GRPCServer = controllerrpc.GetControllerGRPCServer(volumeName, engineInstanceName, control)
 
 	control.StartGRPCServer()
 	return control.WaitForShutdown()

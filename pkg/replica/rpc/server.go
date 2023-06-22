@@ -5,12 +5,10 @@ import (
 	"strconv"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
@@ -29,50 +27,11 @@ type ReplicaHealthCheckServer struct {
 
 func NewReplicaServer(volumeName, instanceName string, s *replica.Server) *grpc.Server {
 	rs := &ReplicaServer{s: s}
-	server := grpc.NewServer(withIdentityValidationInterceptor(volumeName, instanceName))
+	server := grpc.NewServer(ptypes.WithIdentityValidationReplicaServerInterceptor(volumeName, instanceName))
 	ptypes.RegisterReplicaServiceServer(server, rs)
 	healthpb.RegisterHealthServer(server, NewReplicaHealthCheckServer(rs))
 	reflection.Register(server)
 	return server
-}
-
-func withIdentityValidationInterceptor(volumeName, instanceName string) grpc.ServerOption {
-	return grpc.UnaryInterceptor(identityValidationInterceptor(volumeName, instanceName))
-}
-
-func identityValidationInterceptor(volumeName, instanceName string) grpc.UnaryServerInterceptor {
-	// Use a closure to remember the correct volumeName and/or instanceName.
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if ok {
-			incomingVolumeName, ok := md["volume-name"]
-			// Only refuse to serve if both client and server provide validation information.
-			if ok && volumeName != "" {
-				log := logrus.WithFields(logrus.Fields{"method": info.FullMethod,
-					"clientVolumeName": incomingVolumeName[0], "serverVolumeName": volumeName})
-				if incomingVolumeName[0] != volumeName {
-					log.Error("Invalid gRPC metadata")
-					return nil, status.Errorf(codes.InvalidArgument, "Incorrect volume name; check replica address")
-				}
-				log.Debug("Valid gRPC metadata")
-			}
-
-			incomingInstanceName, ok := md["instance-name"]
-			// Only refuse to serve if both client and server provide validation information.
-			if ok && instanceName != "" {
-				log := logrus.WithFields(logrus.Fields{"method": info.FullMethod,
-					"clientInstanceName": incomingInstanceName[0], "serverInstanceName": instanceName})
-				if incomingInstanceName[0] != instanceName {
-					log.Error("Invalid gRPC metadata")
-					return nil, status.Errorf(codes.InvalidArgument, "Incorrect instance name; check replica address")
-				}
-				log.Debug("Validated gRPC metadata")
-			}
-		}
-
-		// Call the RPC's actual handler.
-		return handler(ctx, req)
-	}
 }
 
 func NewReplicaHealthCheckServer(rs *ReplicaServer) *ReplicaHealthCheckServer {

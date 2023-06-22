@@ -87,7 +87,7 @@ def wait_for_process_error(client, name):
 
 
 def create_replica_process(client, name, 
-                           volume_name=VOLUME_NAME,
+                           volume_name=None,
                            replica_dir="",
                            args=[], binary=LONGHORN_BINARY,
                            size=SIZE, port_count=15,
@@ -96,10 +96,13 @@ def create_replica_process(client, name,
     if not replica_dir:
         replica_dir = tempfile.mkdtemp()
     if not args:
-        args = ["--volume-name", volume_name, "replica", replica_dir,
-                "--size", str(size), "--instance-name", name]
+        args = ["replica", replica_dir, "--size", str(size), "--replica-instance-name", name]
     if disable_revision_counter == True:
         args += ["--disableRevCounter"]
+    if volume_name:
+        # We don't know how this replica will be used. Should it have the default volume name or a different one?
+        # Assume nothing unless explicitly set.
+        args = ["--volume-name", volume_name] + args
     client.process_create(
         name=name, binary=binary, args=args,
         port_count=port_count, port_args=port_args)
@@ -115,7 +118,7 @@ def create_engine_process(client, name=ENGINE_NAME,
                           size=SIZE, frontend=FRONTEND_TGT_BLOCKDEV,
                           replicas=[], backends=["tcp", "file"],
                           disable_revision_counter=False):
-    args = ["controller", volume_name]
+    args = ["--engine-instance-name", name, "controller", volume_name]
     if frontend != "":
         args += ["--frontend", frontend]
     if disable_revision_counter == True:
@@ -126,7 +129,6 @@ def create_engine_process(client, name=ENGINE_NAME,
         args += ["--enable-backend", b]
     args += ["--size", str(size)]
     args += ["--current-size", str(size)]
-    args += ["--instance-name", name]
     client.process_create(
         name=name, binary=binary, args=args,
         port_count=1, port_args=["--listen,localhost:"])
