@@ -29,7 +29,7 @@ from common.constants import (
     PROC_STATE_ERROR,
     ENGINE_NAME, EXPANDED_SIZE_STR,
     VOLUME_NO_FRONTEND_NAME,
-    FIXED_REPLICA_PATH1, FIXED_REPLICA_PATH2,
+    FIXED_REPLICA_PATH1, FIXED_REPLICA_PATH2, REPLICA_NAME
 )
 
 thread_failed = False
@@ -86,7 +86,9 @@ def wait_for_process_error(client, name):
     assert verified
 
 
-def create_replica_process(client, name, replica_dir="",
+def create_replica_process(client, name, 
+                           volume_name=VOLUME_NAME,
+                           replica_dir="",
                            args=[], binary=LONGHORN_BINARY,
                            size=SIZE, port_count=15,
                            port_args=["--listen,localhost:"],
@@ -94,7 +96,8 @@ def create_replica_process(client, name, replica_dir="",
     if not replica_dir:
         replica_dir = tempfile.mkdtemp()
     if not args:
-        args = ["replica", replica_dir, "--size", str(size)]
+        args = ["--volume-name", volume_name, "replica", replica_dir,
+                "--size", str(size), "--instance-name", name]
     if disable_revision_counter == True:
         args += ["--disableRevCounter"]
     client.process_create(
@@ -123,6 +126,7 @@ def create_engine_process(client, name=ENGINE_NAME,
         args += ["--enable-backend", b]
     args += ["--size", str(size)]
     args += ["--current-size", str(size)]
+    args += ["--instance-name", name]
     client.process_create(
         name=name, binary=binary, args=args,
         port_count=1, port_args=["--listen,localhost:"])
