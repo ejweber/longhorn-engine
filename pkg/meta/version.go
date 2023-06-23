@@ -2,8 +2,9 @@ package meta
 
 const (
 	// CLIAPIVersion used to communicate with user e.g. longhorn-manager
-	CLIAPIVersion    = 7
-	CLIAPIMinVersion = 3
+	CLIAPIVersion      = 7
+	CLIAPIMinorVersion = 1
+	CLIAPIMinVersion   = 3
 
 	// ControllerAPIVersion used to communicate with instance-manager
 	ControllerAPIVersion    = 4
@@ -27,6 +28,7 @@ type VersionOutput struct {
 	BuildDate string `json:"buildDate"`
 
 	CLIAPIVersion           int `json:"cliAPIVersion"`
+	CLIAPIMinorVersion      int `json:"cliAPIMinorVersion"`
 	CLIAPIMinVersion        int `json:"cliAPIMinVersion"`
 	ControllerAPIVersion    int `json:"controllerAPIVersion"`
 	ControllerAPIMinVersion int `json:"controllerAPIMinVersion"`
@@ -41,6 +43,7 @@ func GetVersion() VersionOutput {
 		BuildDate: BuildDate,
 
 		CLIAPIVersion:           CLIAPIVersion,
+		CLIAPIMinorVersion:      CLIAPIMinorVersion,
 		CLIAPIMinVersion:        CLIAPIMinVersion,
 		ControllerAPIVersion:    ControllerAPIVersion,
 		ControllerAPIMinVersion: ControllerAPIMinVersion,

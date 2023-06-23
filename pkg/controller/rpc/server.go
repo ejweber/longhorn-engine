@@ -247,6 +247,7 @@ func (cs *ControllerServer) VersionDetailGet(ctx context.Context, req *empty.Emp
 			GitCommit:               version.GitCommit,
 			BuildDate:               version.BuildDate,
 			CliAPIVersion:           int64(version.CLIAPIVersion),
+			CliAPIMinorVersion:      int64(version.CLIAPIMinorVersion),
 			CliAPIMinVersion:        int64(version.CLIAPIMinVersion),
 			ControllerAPIVersion:    int64(version.ControllerAPIVersion),
 			ControllerAPIMinVersion: int64(version.ControllerAPIMinVersion),
