@@ -32,7 +32,7 @@ def test_validation_fails_with_client(engine_manager_client,
                                 ENGINE_NAME)
     with pytest.raises(grpc.RpcError) as e:
         e_client.volume_get()
-    assert e.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert e.value.code() == grpc.StatusCode.FAILED_PRECONDITION
 
     # CASE 2:
     # Our engine client is created with a different instance name than the
@@ -42,7 +42,7 @@ def test_validation_fails_with_client(engine_manager_client,
                                 'wrong')
     with pytest.raises(grpc.RpcError) as e:
         e_client.volume_get()
-    assert e.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert e.value.code() == grpc.StatusCode.FAILED_PRECONDITION
 
     # CASE 3:
     # Our replica client is created with a different volume name than the
@@ -52,7 +52,7 @@ def test_validation_fails_with_client(engine_manager_client,
                              REPLICA_NAME)
     with pytest.raises(grpc.RpcError) as e:
         r_client.replica_get()
-    assert e.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert e.value.code() == grpc.StatusCode.FAILED_PRECONDITION
 
     # CASE 4:
     # Our replica client is created with a different instance name than the
@@ -62,7 +62,7 @@ def test_validation_fails_with_client(engine_manager_client,
                              'wrong')
     with pytest.raises(grpc.RpcError) as e:
         r_client.replica_get()
-    assert e.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert e.value.code() == grpc.StatusCode.FAILED_PRECONDITION
 
     # CASE 5:
     # Our engine client is right, so we can send it instructions, but it has

@@ -211,10 +211,11 @@ func verifyRebuildReplica(c *cli.Context) error {
 	if c.NArg() == 0 {
 		return errors.New("replica address is required")
 	}
-	address := c.Args()[0]
+	replicaAddress := c.Args()[0]
 	url := c.GlobalString("url")
 	volumeName := c.GlobalString("volume-name")
 	engineInstanceName := c.GlobalString("engine-instance-name")
+	replicaInstanceName := c.String("replica-instance-name")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -223,7 +224,7 @@ func verifyRebuildReplica(c *cli.Context) error {
 		return err
 	}
 
-	if err := task.VerifyRebuildReplica(address); err != nil {
+	if err := task.VerifyRebuildReplica(replicaAddress, replicaInstanceName); err != nil {
 		return err
 	}
 	return nil

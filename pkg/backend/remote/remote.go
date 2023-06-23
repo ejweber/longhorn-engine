@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/longhorn/longhorn-engine/pkg/dataconn"
 	replicaClient "github.com/longhorn/longhorn-engine/pkg/replica/client"
@@ -46,7 +45,8 @@ type Remote struct {
 
 func (r *Remote) Close() error {
 	logrus.Infof("Closing: %s", r.name)
-	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
+	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -65,7 +65,8 @@ func (r *Remote) Close() error {
 
 func (r *Remote) open() error {
 	logrus.Infof("Opening remote: %s", r.name)
-	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
+	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -85,7 +86,8 @@ func (r *Remote) open() error {
 func (r *Remote) Snapshot(name string, userCreated bool, created string, labels map[string]string) error {
 	logrus.Infof("Starting to snapshot: %s %s UserCreated %v Created at %v, Labels %v",
 		r.name, name, userCreated, created, labels)
-	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
+	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -114,7 +116,8 @@ func (r *Remote) Expand(size int64) (err error) {
 		err = types.WrapError(err, "failed to expand replica %v from remote", r.replicaServiceURL)
 	}()
 
-	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
+	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -136,7 +139,8 @@ func (r *Remote) Expand(size int64) (err error) {
 func (r *Remote) SetRevisionCounter(counter int64) error {
 	logrus.Infof("Set revision counter of %s to : %v", r.name, counter)
 
-	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
+	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -242,7 +246,8 @@ func (r *Remote) GetUnmapMarkSnapChainRemoved() (bool, error) {
 func (r *Remote) SetUnmapMarkSnapChainRemoved(enabled bool) error {
 	logrus.Infof("Setting UnmapMarkSnapChainRemoved of %s to : %v", r.name, enabled)
 
-	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
+	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
 	if err != nil {
 		return fmt.Errorf("cannot connect to ReplicaService %v: %v", r.replicaServiceURL, err)
 	}
@@ -262,7 +267,8 @@ func (r *Remote) SetUnmapMarkSnapChainRemoved(enabled bool) error {
 }
 
 func (r *Remote) info() (*types.ReplicaInfo, error) {
-	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(), withVolumeNameInterceptor(r.volumeName))
+	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -364,17 +370,4 @@ func (r *Remote) GetMonitorChannel() types.MonitorChannel {
 
 func (r *Remote) StopMonitoring() {
 	r.closeChan <- struct{}{}
-}
-
-func withVolumeNameInterceptor(volumeName string) grpc.DialOption {
-	return grpc.WithUnaryInterceptor(volumeNameInterceptor(volumeName))
-}
-
-func volumeNameInterceptor(volumeName string) grpc.UnaryClientInterceptor {
-	// Use a closure to remember the correct volumeName.
-	return func(ctx context.Context, method string, req any, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		ctx = metadata.AppendToOutgoingContext(ctx, "volume-name", volumeName)
-		fmt.Printf("invoking gRPC with volumeName: %s\n", volumeName)
-		return invoker(ctx, method, req, reply, cc, opts...)
-	}
 }

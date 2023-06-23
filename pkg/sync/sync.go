@@ -396,8 +396,8 @@ func (t *Task) checkRestoreReplicaSize(address, instanceName string, volumeSize 
 	return nil
 }
 
-func (t *Task) VerifyRebuildReplica(address string) error {
-	if err := t.client.ReplicaVerifyRebuild(address); err != nil {
+func (t *Task) VerifyRebuildReplica(address, instanceName string) error {
+	if err := t.client.ReplicaVerifyRebuild(address, instanceName); err != nil {
 		return err
 	}
 	return nil
@@ -441,7 +441,7 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, address, instance
 		return err
 	}
 
-	resp, err := t.client.ReplicaPrepareRebuild(address)
+	resp, err := t.client.ReplicaPrepareRebuild(address, instanceName)
 	if err != nil {
 		return err
 	}
@@ -454,7 +454,7 @@ func (t *Task) AddReplica(volumeSize, volumeCurrentSize int64, address, instance
 		return err
 	}
 
-	if err := t.reloadAndVerify(address, toClient); err != nil {
+	if err := t.reloadAndVerify(address, instanceName, toClient); err != nil {
 		return err
 	}
 
@@ -526,13 +526,13 @@ func (t *Task) checkAndExpandReplica(address, instanceName string, size int64) e
 	return nil
 }
 
-func (t *Task) reloadAndVerify(address string, repClient *replicaClient.ReplicaClient) error {
+func (t *Task) reloadAndVerify(address, instanceName string, repClient *replicaClient.ReplicaClient) error {
 	_, err := repClient.ReloadReplica()
 	if err != nil {
 		return err
 	}
 
-	if err := t.client.ReplicaVerifyRebuild(address); err != nil {
+	if err := t.client.ReplicaVerifyRebuild(address, instanceName); err != nil {
 		return err
 	}
 
