@@ -131,8 +131,8 @@ func (c *Controller) WaitForShutdown() error {
 	return c.lastError
 }
 
-func (c *Controller) AddReplica(address string, snapshotRequired bool, mode types.Mode) error {
-	return c.addReplica(address, snapshotRequired, mode)
+func (c *Controller) AddReplica(address, instanceName string, snapshotRequired bool, mode types.Mode) error {
+	return c.addReplica(address, instanceName, snapshotRequired, mode)
 }
 
 func (c *Controller) hasWOReplica() bool {
@@ -157,14 +157,14 @@ func (c *Controller) canAdd(address string) (bool, error) {
 	return true, nil
 }
 
-func (c *Controller) addReplica(address string, snapshotRequired bool, mode types.Mode) error {
+func (c *Controller) addReplica(address, instanceName string, snapshotRequired bool, mode types.Mode) error {
 	c.Lock()
 	defer c.Unlock()
 	if ok, err := c.canAdd(address); !ok {
 		return err
 	}
 
-	newBackend, err := c.factory.Create(c.Name, address, c.DataServerProtocol, c.engineReplicaTimeout)
+	newBackend, err := c.factory.Create(address, c.Name, instanceName, c.DataServerProtocol, c.engineReplicaTimeout)
 	if err != nil {
 		return err
 	}
@@ -728,7 +728,8 @@ func (c *Controller) Start(volumeSize, volumeCurrentSize int64, addresses ...str
 	errorCodes := map[string]codes.Code{}
 	first := true
 	for _, address := range addresses {
-		newBackend, err := c.factory.Create(c.Name, address, c.DataServerProtocol, c.engineReplicaTimeout)
+		// Since Start only accepts addresses, we do not know the instance name here.
+		newBackend, err := c.factory.Create(address, c.Name, "", c.DataServerProtocol, c.engineReplicaTimeout)
 		if err != nil {
 			if strings.Contains(err.Error(), "rpc error: code = Unavailable") {
 				errorCodes[address] = codes.Unavailable

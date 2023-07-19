@@ -36,17 +36,18 @@ type Factory struct {
 
 type Remote struct {
 	types.ReaderWriterUnmapperAt
-	name              string
+	address           string
 	replicaServiceURL string
 	closeChan         chan struct{}
 	monitorChan       types.MonitorChannel
 	volumeName        string
+	instanceName      string
 }
 
 func (r *Remote) Close() error {
-	logrus.Infof("Closing: %s", r.name)
+	logrus.Infof("Closing: %s", r.address)
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
-		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, r.instanceName))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -64,9 +65,9 @@ func (r *Remote) Close() error {
 }
 
 func (r *Remote) open() error {
-	logrus.Infof("Opening remote: %s", r.name)
+	logrus.Infof("Opening remote: %s", r.address)
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
-		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, r.instanceName))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -85,9 +86,9 @@ func (r *Remote) open() error {
 
 func (r *Remote) Snapshot(name string, userCreated bool, created string, labels map[string]string) error {
 	logrus.Infof("Starting to snapshot: %s %s UserCreated %v Created at %v, Labels %v",
-		r.name, name, userCreated, created, labels)
+		r.address, name, userCreated, created, labels)
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
-		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, r.instanceName))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -106,7 +107,7 @@ func (r *Remote) Snapshot(name string, userCreated bool, created string, labels 
 		return errors.Wrapf(err, "failed to snapshot replica %v from remote", r.replicaServiceURL)
 	}
 	logrus.Infof("Finished to snapshot: %s %s UserCreated %v Created at %v, Labels %v",
-		r.name, name, userCreated, created, labels)
+		r.address, name, userCreated, created, labels)
 	return nil
 }
 
@@ -117,7 +118,7 @@ func (r *Remote) Expand(size int64) (err error) {
 	}()
 
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
-		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, r.instanceName))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -137,10 +138,10 @@ func (r *Remote) Expand(size int64) (err error) {
 }
 
 func (r *Remote) SetRevisionCounter(counter int64) error {
-	logrus.Infof("Set revision counter of %s to : %v", r.name, counter)
+	logrus.Infof("Set revision counter of %s to : %v", r.address, counter)
 
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
-		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, r.instanceName))
 	if err != nil {
 		return errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -244,10 +245,10 @@ func (r *Remote) GetUnmapMarkSnapChainRemoved() (bool, error) {
 }
 
 func (r *Remote) SetUnmapMarkSnapChainRemoved(enabled bool) error {
-	logrus.Infof("Setting UnmapMarkSnapChainRemoved of %s to : %v", r.name, enabled)
+	logrus.Infof("Setting UnmapMarkSnapChainRemoved of %s to : %v", r.address, enabled)
 
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
-		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, r.instanceName))
 	if err != nil {
 		return fmt.Errorf("cannot connect to ReplicaService %v: %v", r.replicaServiceURL, err)
 	}
@@ -268,7 +269,7 @@ func (r *Remote) SetUnmapMarkSnapChainRemoved(enabled bool) error {
 
 func (r *Remote) info() (*types.ReplicaInfo, error) {
 	conn, err := grpc.Dial(r.replicaServiceURL, grpc.WithInsecure(),
-		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, ""))
+		ptypes.WithIdentityValidationClientInterceptor(r.volumeName, r.instanceName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot connect to ReplicaService %v", r.replicaServiceURL)
 	}
@@ -286,7 +287,7 @@ func (r *Remote) info() (*types.ReplicaInfo, error) {
 	return replicaClient.GetReplicaInfo(resp.Replica), nil
 }
 
-func (rf *Factory) Create(volumeName, address string, dataServerProtocol types.DataServerProtocol, engineToReplicaTimeout time.Duration) (types.Backend, error) {
+func (rf *Factory) Create(address, volumeName, instanceName string, dataServerProtocol types.DataServerProtocol, engineToReplicaTimeout time.Duration) (types.Backend, error) {
 	logrus.Infof("Connecting to remote: %s (%v)", address, dataServerProtocol)
 
 	controlAddress, dataAddress, _, _, err := util.GetAddresses(volumeName, address, dataServerProtocol)
@@ -295,13 +296,14 @@ func (rf *Factory) Create(volumeName, address string, dataServerProtocol types.D
 	}
 
 	r := &Remote{
-		name:              address,
+		address:           address,
 		replicaServiceURL: controlAddress,
 		// We don't want sender to wait for receiver, because receiver may
 		// has been already notified
-		closeChan:   make(chan struct{}, 5),
-		monitorChan: make(types.MonitorChannel, 5),
-		volumeName:  volumeName,
+		closeChan:    make(chan struct{}, 5),
+		monitorChan:  make(types.MonitorChannel, 5),
+		volumeName:   volumeName,
+		instanceName: instanceName,
 	}
 
 	replica, err := r.info()

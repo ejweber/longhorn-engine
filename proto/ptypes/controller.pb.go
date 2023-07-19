@@ -680,6 +680,7 @@ type ControllerReplicaCreateRequest struct {
 	Address              string      `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	SnapshotRequired     bool        `protobuf:"varint,2,opt,name=snapshot_required,json=snapshotRequired,proto3" json:"snapshot_required,omitempty"`
 	Mode                 ReplicaMode `protobuf:"varint,3,opt,name=mode,proto3,enum=ptypes.ReplicaMode" json:"mode,omitempty"`
+	
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
