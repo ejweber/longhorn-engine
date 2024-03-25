@@ -132,6 +132,8 @@ func (d *LonghornDevice) startScsiDevice(startScsiDevice bool) (err error) {
 			if err := d.scsiDevice.StartInitator(); err != nil {
 				return err
 			}
+			// This is where we call down to utils to create a /dev/longhorn/... device. We need to create a linear
+			// device first.
 			if err := d.createDev(); err != nil {
 				return err
 			}

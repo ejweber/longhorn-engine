@@ -494,6 +494,8 @@ func (c *Controller) startFrontend() error {
 }
 
 func (c *Controller) StartFrontend(frontend string) error {
+	// This is the lock Derek is concerned about in
+	// https://github.com/longhorn/longhorn/issues/2187#issuecomment-1735473718/
 	c.Lock()
 	defer c.Unlock()
 
