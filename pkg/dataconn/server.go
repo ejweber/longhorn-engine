@@ -95,8 +95,10 @@ func (s *Server) handleUnmap(msg *Message) {
 }
 
 func (s *Server) handlePing(msg *Message) {
-	err := s.data.PingResponse()
-	s.pushResponse(0, msg, err)
+	// Don't ever respond to pings. It seems like the controller won' care if the replica ignores
+	// ping operations.
+	// err := s.data.PingResponse()
+	// s.pushResponse(0, msg, err)
 }
 
 func (s *Server) pushResponse(count int, msg *Message, err error) {

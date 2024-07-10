@@ -97,9 +97,15 @@ func (c *Client) operation(op uint32, buf []byte, length uint32, offset int64) (
 		msg.Data = buf
 	}
 
+	if msg.Type == TypePing {
+		logrus.Warn("Ping request sent to queue")
+	}
 	c.requests <- &msg
 
 	<-msg.Complete
+	if msg.Type == TypePing {
+		logrus.Warn("Ping complete")
+	}
 	// Only copy the message if a read is requested
 	if op == TypeRead && (msg.Type == TypeResponse || msg.Type == TypeEOF) {
 		copy(buf, msg.Data)
