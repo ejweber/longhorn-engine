@@ -78,12 +78,6 @@ func (c *Client) ReadAt(buf []byte, offset int64) (int, error) {
 	return c.operation(TypeRead, buf, uint32(len(buf)), offset)
 }
 
-// Ping replica client
-func (c *Client) Ping() error {
-	_, err := c.operation(TypePing, nil, 0, 0)
-	return err
-}
-
 func (c *Client) operation(op uint32, buf []byte, length uint32, offset int64) (int, error) {
 	msg := Message{
 		Complete: make(chan struct{}, 1),
@@ -225,9 +219,8 @@ func (c *Client) handleRequest(req *Message) {
 		req.ID = journal.InsertPendingOp(time.Now(), c.TargetID(), journal.OpWrite, int(req.Size))
 	case TypeUnmap:
 		req.ID = journal.InsertPendingOp(time.Now(), c.TargetID(), journal.OpUnmap, int(req.Size))
-	case TypePing:
-		req.ID = journal.InsertPendingOp(time.Now(), c.TargetID(), journal.OpPing, 0)
 	}
+	// TODO: Remove OpPing from sparse-tools.
 
 	req.MagicVersion = MagicVersion
 	req.Seq = c.nextSeq()

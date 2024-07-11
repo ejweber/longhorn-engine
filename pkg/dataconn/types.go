@@ -9,7 +9,6 @@ const (
 	TypeError
 	TypeEOF
 	TypeClose
-	TypePing
 	TypeUnmap
 
 	messageSize     = (32 + 32 + 32 + 64) / 8 //TODO: unused?

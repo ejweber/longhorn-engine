@@ -423,8 +423,6 @@ func (rf *Factory) Create(volumeName, address string, dataServerProtocol types.D
 		return nil, err
 	}
 
-	go r.monitorPing(dataConnClient)
-
 	return r, nil
 }
 
@@ -440,25 +438,6 @@ func connect(dataServerProtocol types.DataServerProtocol, address string) (net.C
 		return net.DialUnix("unix", nil, unixAddr)
 	default:
 		return nil, fmt.Errorf("unsupported protocol: %v", dataServerProtocol)
-	}
-}
-
-func (r *Remote) monitorPing(client *dataconn.Client) {
-	ticker := time.NewTicker(PingInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-r.closeChan:
-			r.monitorChan <- nil
-			return
-		case <-ticker.C:
-			if err := client.Ping(); err != nil {
-				client.SetError(err)
-				r.monitorChan <- err
-				return
-			}
-		}
 	}
 }
 

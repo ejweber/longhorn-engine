@@ -50,8 +50,6 @@ func (s *Server) readFromWire(ret chan<- error) {
 		go s.handleWrite(msg)
 	case TypeUnmap:
 		go s.handleUnmap(msg)
-	case TypePing:
-		go s.handlePing(msg)
 	}
 	ret <- nil
 }
@@ -92,11 +90,6 @@ func (s *Server) handleWrite(msg *Message) {
 func (s *Server) handleUnmap(msg *Message) {
 	c, err := s.data.UnmapAt(msg.Size, msg.Offset)
 	s.pushResponse(c, msg, err)
-}
-
-func (s *Server) handlePing(msg *Message) {
-	err := s.data.PingResponse()
-	s.pushResponse(0, msg, err)
 }
 
 func (s *Server) pushResponse(count int, msg *Message, err error) {
