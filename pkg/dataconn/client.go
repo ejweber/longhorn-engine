@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"slices"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -127,8 +128,8 @@ func (c *Client) loop() {
 	defer ticker.Stop()
 
 	var clientError error
-	var ioInflight int
-	var ioDeadline time.Time
+	var opInProgress int
+	var opDeadline time.Time
 
 	// handleClientError cleans up all in flight messages
 	// also stores the error so that future requests/responses get errored immediately.
@@ -138,8 +139,8 @@ func (c *Client) loop() {
 			c.replyError(msg, err)
 		}
 
-		ioInflight = 0
-		ioDeadline = time.Time{}
+		opInProgress = 0
+		opDeadline = time.Time{}
 	}
 
 	for {
@@ -147,7 +148,7 @@ func (c *Client) loop() {
 		case <-c.end:
 			return
 		case <-ticker.C:
-			if ioDeadline.IsZero() || time.Now().Before(ioDeadline) {
+			if opDeadline.IsZero() || time.Now().Before(opDeadline) {
 				continue
 			}
 
@@ -160,11 +161,11 @@ func (c *Client) loop() {
 				continue
 			}
 
-			if req.Type == TypeRead || req.Type == TypeWrite || req.Type == TypeUnmap {
-				if ioInflight == 0 {
-					ioDeadline = time.Now().Add(c.opTimeout)
+			if slices.Contains([]uint32{TypeRead, TypeWrite, TypePing, TypeUnmap}, req.Type) {
+				if opInProgress == 0 {
+					opDeadline = time.Now().Add(c.opTimeout)
 				}
-				ioInflight++
+				opInProgress++
 			}
 
 			c.handleRequest(req)
@@ -180,12 +181,12 @@ func (c *Client) loop() {
 				continue
 			}
 
-			if req.Type == TypeRead || req.Type == TypeWrite || req.Type == TypeUnmap {
-				ioInflight--
-				if ioInflight > 0 {
-					ioDeadline = time.Now().Add(c.opTimeout)
-				} else if ioInflight == 0 {
-					ioDeadline = time.Time{}
+			if slices.Contains([]uint32{TypeRead, TypeWrite, TypePing, TypeUnmap}, req.Type) {
+				opInProgress--
+				if opInProgress > 0 {
+					opDeadline = time.Now().Add(c.opTimeout)
+				} else if opInProgress == 0 {
+					opDeadline = time.Time{}
 				}
 			}
 
