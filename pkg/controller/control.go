@@ -465,6 +465,10 @@ func (c *Controller) addReplicaNoLock(newBackend types.Backend, address string, 
 
 	c.backend.AddBackend(address, newBackend, mode)
 
+	if mode != types.ERR {
+		go c.monitoring(address, newBackend)
+	}
+
 	return nil
 }
 
@@ -1257,6 +1261,24 @@ func (c *Controller) Shutdown() error {
 
 func (c *Controller) Size() int64 {
 	return c.size
+}
+
+func (c *Controller) monitoring(address string, backend types.Backend) {
+	monitorChan := backend.GetMonitorChannel()
+
+	if monitorChan == nil {
+		return
+	}
+
+	logrus.Infof("Start monitoring %v", address)
+	err := <-monitorChan
+	if err != nil {
+		logrus.WithError(err).Errorf("Backend %v monitoring failed, mark as ERR", address)
+		if err = c.SetReplicaMode(address, types.ERR); err != nil {
+			logrus.WithError(err).Warnf("Failed to set replica %v to ERR", address)
+		}
+	}
+	logrus.Infof("Monitoring stopped %v", address)
 }
 
 func (c *Controller) Endpoint() string {

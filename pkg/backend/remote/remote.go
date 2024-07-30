@@ -42,6 +42,7 @@ type Remote struct {
 	name              string
 	replicaServiceURL string
 	closeChan         chan struct{}
+	monitorChan       types.MonitorChannel
 	volumeName        string
 }
 
@@ -392,8 +393,9 @@ func (rf *Factory) Create(volumeName, address string, dataServerProtocol types.D
 		replicaServiceURL: controlAddress,
 		// We don't want sender to wait for receiver, because receiver may
 		// has been already notified
-		closeChan:  make(chan struct{}, 5),
-		volumeName: volumeName,
+		closeChan:   make(chan struct{}, 5),
+		monitorChan: make(types.MonitorChannel, 5),
+		volumeName:  volumeName,
 	}
 
 	replica, err := r.info()
@@ -421,7 +423,7 @@ func (rf *Factory) Create(volumeName, address string, dataServerProtocol types.D
 		return nil, err
 	}
 
-	go r.monitor(dataConnClient, engineToReplicaTimeout)
+	go r.monitorPing(dataConnClient, engineToReplicaTimeout)
 
 	return r, nil
 }
@@ -441,25 +443,32 @@ func connect(dataServerProtocol types.DataServerProtocol, address string) (net.C
 	}
 }
 
-// monitor sends a TypePing message to the remote once every engineToReplicatimeout. The remote does not have to respond
-// to each ping in any particular time, but if it does not respond to any message (including a TypePing message) within
-// engineToReplicaTimeout, the replica will be marked as failed.
-func (r *Remote) monitor(client *dataconn.Client, engineToReplicaTimeout time.Duration) {
+// monitorPing sends a TypePing message to the remote once every engineToReplicatimeout. The remote does not have to
+// respond to each ping in any particular time, but if it does not respond to any message (including a TypePing message)
+// within engineToReplicaTimeout, the replica will be marked as failed.
+func (r *Remote) monitorPing(client *dataconn.Client, engineToReplicaTimeout time.Duration) {
 	ticker := time.NewTicker(engineToReplicaTimeout)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-r.closeChan:
+			r.monitorChan <- nil
 			return
 		case <-ticker.C:
 			go func() {
 				if err := client.Ping(); err != nil {
 					client.SetError(err)
+					r.monitorChan <- err
+					return
 				}
 			}()
 		}
 	}
+}
+
+func (r *Remote) GetMonitorChannel() types.MonitorChannel {
+	return r.monitorChan
 }
 
 func (r *Remote) StopMonitoring() {

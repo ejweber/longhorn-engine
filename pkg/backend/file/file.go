@@ -147,6 +147,10 @@ func (f *Wrapper) GetState() (string, error) {
 	return "open", nil
 }
 
+func (f *Wrapper) GetMonitorChannel() types.MonitorChannel {
+	return nil
+}
+
 func (f *Wrapper) PingResponse() error {
 	return nil
 }
