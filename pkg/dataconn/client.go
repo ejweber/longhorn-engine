@@ -257,9 +257,7 @@ func (c *Client) write() {
 		go func(w *Wire) {
 			for msg := range c.send {
 				if err := w.Write(msg); err != nil {
-					c.responses <- &Message{
-						transportErr: err,
-					}
+					c.SetError(err)
 				}
 			}
 		}(wire)
@@ -273,9 +271,7 @@ func (c *Client) read() {
 				msg, err := w.Read()
 				if err != nil {
 					logrus.WithError(err).Errorf("Error reading from wire %v", c.peerAddr)
-					c.responses <- &Message{
-						transportErr: err,
-					}
+					c.SetError(err)
 					break
 				}
 				c.responses <- msg
