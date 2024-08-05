@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -26,7 +27,14 @@ type Client struct {
 	messages  map[uint32]*Message
 	wires     []*Wire
 	peerAddr  string
-	opTimeout time.Duration
+
+	// The dataconn client tracks the amount of time since the last successful I/O operation, but it is up to the upper
+	// layer to determine whether a timeoutChan has occured as a result. This sharing of responsibilty allows:
+	// - The dataconn client to handle its own in-flight I/O, and
+	// - The upper layer to dynamically decide on an "acceptable" timeoutChan (based on the status of the other
+	//   available replicas.)
+	timeoutChan           chan struct{}
+	durationSinceResponse *atomic.Int64
 }
 
 // NewClient replica client
@@ -43,7 +51,9 @@ func NewClient(conns []net.Conn, engineToReplicaTimeout time.Duration) *Client {
 		send:      make(chan *Message, 1024),
 		responses: make(chan *Message, 1024),
 		messages:  map[uint32]*Message{},
-		opTimeout: engineToReplicaTimeout,
+
+		timeoutChan:           make(chan struct{}),
+		durationSinceResponse: &atomic.Int64{},
 	}
 	go c.loop()
 	c.write()
@@ -121,14 +131,21 @@ func (c *Client) Close() {
 	c.end <- struct{}{}
 }
 
+func (c *Client) GetTimeoutChannel() chan struct{} {
+	return c.timeoutChan
+}
+
+// GetDurationSinceResponseShared returns and atomic.Int64. Other goroutines can access it safely using atomic
+// operations, but it must be cast to a time.Duration before duration operations can be used.
+func (c *Client) GetDurationSinceResponseShared() *atomic.Int64 {
+	return c.durationSinceResponse
+}
+
 func (c *Client) loop() {
 	defer close(c.send)
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
 
 	var clientError error
 	var ioInflight int
-	var ioDeadline time.Time
 
 	// handleClientError cleans up all in flight messages
 	// also stores the error so that future requests/responses get errored immediately.
@@ -139,19 +156,15 @@ func (c *Client) loop() {
 		}
 
 		ioInflight = 0
-		ioDeadline = time.Time{}
+		c.durationSinceResponse.Store(-1)
 	}
 
 	for {
 		select {
 		case <-c.end:
 			return
-		case <-ticker.C:
-			if ioDeadline.IsZero() || time.Now().Before(ioDeadline) {
-				continue
-			}
-
-			logrus.Errorf("R/W Timeout. No response received in %v", c.opTimeout)
+		case <-c.timeoutChan:
+			logrus.Errorf("R/W Timeout. No response received in %v", time.Duration(c.durationSinceResponse.Load()))
 			handleClientError(ErrRWTimeout)
 			journal.PrintLimited(1000)
 		case req := <-c.requests:
@@ -162,7 +175,8 @@ func (c *Client) loop() {
 
 			if req.Type == TypeRead || req.Type == TypeWrite || req.Type == TypeUnmap {
 				if ioInflight == 0 {
-					ioDeadline = time.Now().Add(c.opTimeout)
+					// >= 0 means we are waiting on an I/O operation to complete.
+					c.durationSinceResponse.Store(0)
 				}
 				ioInflight++
 			}
@@ -183,9 +197,11 @@ func (c *Client) loop() {
 			if req.Type == TypeRead || req.Type == TypeWrite || req.Type == TypeUnmap {
 				ioInflight--
 				if ioInflight > 0 {
-					ioDeadline = time.Now().Add(c.opTimeout)
+					// >= 0 means we are waiting on an I/O operation to complete.
+					c.durationSinceResponse.Store(0)
 				} else if ioInflight == 0 {
-					ioDeadline = time.Time{}
+					// < 0 means we are not waiting on an I/O operation to complete.
+					c.durationSinceResponse.Store(-1)
 				}
 			}
 

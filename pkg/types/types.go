@@ -96,6 +96,8 @@ type Backend interface {
 	SetRevisionCounter(counter int64) error
 	GetState() (string, error)
 	GetMonitorChannel() MonitorChannel
+	GetTimeoutChannel() chan struct{}
+	GetDurationSinceResponse() time.Duration
 	StopMonitoring()
 	IsRevisionCounterDisabled() (bool, error)
 	GetLastModifyTime() (int64, error)

@@ -157,3 +157,11 @@ func (f *Wrapper) PingResponse() error {
 
 func (f *Wrapper) StopMonitoring() {
 }
+
+func (r *Wrapper) GetTimeoutChannel() chan struct{} {
+	return nil
+}
+
+func (r *Wrapper) GetDurationSinceResponse() time.Duration {
+	return -1
+}

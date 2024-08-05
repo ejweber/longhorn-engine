@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/longhorn/types/pkg/generated/enginerpc"
@@ -47,6 +48,14 @@ type Remote struct {
 	closeChan         chan struct{}
 	monitorChan       types.MonitorChannel
 	volumeName        string
+
+	// The dataconn client tracks the amount of time since the last successful I/O operation, but it is up to the upper
+	// layer to determine whether a timeoutChan has occured as a result. This sharing of responsibilty allows:
+	// - The dataconn client to handle its own in-flight I/O, and
+	// - The upper layer to dynamically decide on an "acceptable" timeoutChan (based on the status of the other
+	//   available replicas.)
+	timeoutChan                 chan struct{}
+	durationSinceResponseShared *atomic.Int64
 }
 
 func (r *Remote) Close() error {
@@ -421,6 +430,8 @@ func (rf *Factory) Create(volumeName, address string, dataServerProtocol types.D
 
 	dataConnClient := dataconn.NewClient(conns, engineToReplicaTimeout)
 	r.ReaderWriterUnmapperAt = dataConnClient
+	r.timeoutChan = dataConnClient.GetTimeoutChannel()
+	r.durationSinceResponseShared = dataConnClient.GetDurationSinceResponseShared()
 
 	if err := r.open(); err != nil {
 		return nil, err
@@ -480,4 +491,12 @@ func (r *Remote) GetMonitorChannel() types.MonitorChannel {
 
 func (r *Remote) StopMonitoring() {
 	r.closeChan <- struct{}{}
+}
+
+func (r *Remote) GetTimeoutChannel() chan struct{} {
+	return r.timeoutChan
+}
+
+func (r *Remote) GetDurationSinceResponse() time.Duration {
+	return time.Duration(r.durationSinceResponseShared.Load())
 }

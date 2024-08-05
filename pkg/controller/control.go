@@ -70,6 +70,8 @@ type Controller struct {
 
 const (
 	lastModifyCheckPeriod = 5 * time.Second
+
+	experimentalLongEngineToReplicaTimeout = 16 * time.Second
 )
 
 func NewController(name string, factory types.BackendFactory, frontend types.Frontend, isUpgrade, disableRevCounter, salvageRequested, unmapMarkSnapChainRemoved bool,
@@ -96,6 +98,7 @@ func NewController(name string, factory types.BackendFactory, frontend types.Fro
 	}
 	c.reset()
 	c.metricsStart()
+	c.monitorBackendTimeouts(engineReplicaTimeout, experimentalLongEngineToReplicaTimeout)
 	return c
 }
 
@@ -1419,4 +1422,49 @@ func attemptBindMountFilesystem(sourcePoint, mountPoint string, mounter mount.In
 	}
 
 	return mounter.Mount(sourcePoint, mountPoint, "", []string{"bind"})
+}
+
+func (c *Controller) monitorBackendTimeouts(shortTimeout, longTimeout time.Duration) {
+	// TODO: How do we stop this?
+	ticker := time.NewTicker(1 * time.Second)
+	go func() {
+		// Remember addressToTimeOut so we keep considering the same one until successful.
+		addressToTimeOut := ""
+		for {
+			<-ticker.C
+			c.checkBackendTimeouts(shortTimeout, longTimeout, addressToTimeOut)
+		}
+	}()
+}
+
+// checkBackendTimeouts is a separate function for lock safety.
+func (c *Controller) checkBackendTimeouts(shortTimeout, longTimeout time.Duration, addressToTimeOut string) {
+	c.RLock()
+	defer c.RUnlock()
+
+	if backend := c.backend.backends[addressToTimeOut]; backend.mode == types.RW {
+		// The last backend we tried to stop via timeout is still not ERR. Don't try another one yet.
+		// TODO: We could speed this up by checking for durationSinceResponce < 0 instead.
+		return
+	}
+
+	addressToTimeOut = ""
+	for address, backend := range c.backend.backends {
+		if backend.mode == types.RW {
+			if backend.backend.GetDurationSinceResponse() > longTimeout && addressToTimeOut == "" {
+				addressToTimeOut = address
+			} else if backend.backend.GetDurationSinceResponse() > shortTimeout {
+				addressToTimeOut = address
+			}
+		}
+	}
+	if addressToTimeOut == "" {
+		return
+	}
+
+	select {
+	case c.backend.backends[addressToTimeOut].backend.GetTimeoutChannel() <- struct{}{}:
+	default:
+		// We don't want to block if we already sent on the last loop.
+	}
 }
