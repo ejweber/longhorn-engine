@@ -163,5 +163,5 @@ func (r *Wrapper) GetTimeoutChannel() chan struct{} {
 }
 
 func (r *Wrapper) GetDurationSinceResponse() time.Duration {
-	return -1
+	return time.Duration(0)
 }

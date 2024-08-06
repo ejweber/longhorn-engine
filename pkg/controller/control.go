@@ -1442,28 +1442,35 @@ func (c *Controller) checkBackendTimeouts(shortTimeout, longTimeout time.Duratio
 	c.RLock()
 	defer c.RUnlock()
 
-	if backend := c.backend.backends[addressToTimeOut]; backend.mode == types.RW {
-		// The last backend we tried to stop via timeout is still not ERR. Don't try another one yet.
-		// TODO: We could speed this up by checking for durationSinceResponce < 0 instead.
+	if backend, ok := c.backend.backends[addressToTimeOut]; ok && backend.backend.GetDurationSinceResponse() >= 0 {
+		// The last backend we tried to stop via timeout hasn't acknowledged it. Don't try another one yet.
 		return addressToTimeOut
 	}
 
 	addressToTimeOutLong := ""
 	addressToTimeOutShort := ""
-	rwBackendCount := 0
+	backendsNotTimedOut := 0
 	for address, backend := range c.backend.backends {
-		if backend.mode == types.RW {
-			rwBackendCount += 1
-			if backend.backend.GetDurationSinceResponse() > longTimeout && addressToTimeOutLong == "" {
-				addressToTimeOutLong = address
-			} else if backend.backend.GetDurationSinceResponse() > shortTimeout {
-				addressToTimeOutShort = address
-			}
+		durationSinceResponse := backend.backend.GetDurationSinceResponse()
+		if durationSinceResponse < 0 {
+			// This backend has acknowledged our request to time out.
+			// It would look cleaner to check for ERR versus RW mode here, but a backend won't actually transition to
+			// ERR until the completion of at least one I/O operation. If, for example, all three backends for an
+			// engine are unreachable, none of the backends can transition to ERR until all of them have timed out (and
+			// the operation fails). We want to be able to time out the other two backends in due time instead of
+			// waiting for some TCP error, etc.
+			continue
+		}
+		backendsNotTimedOut += 1
+		if durationSinceResponse > longTimeout && addressToTimeOutLong == "" {
+			addressToTimeOutLong = address
+		} else if durationSinceResponse > shortTimeout {
+			addressToTimeOutShort = address
 		}
 	}
 	if addressToTimeOutLong != "" {
 		addressToTimeOut = addressToTimeOutLong
-	} else if addressToTimeOutShort != "" && rwBackendCount > 1 {
+	} else if addressToTimeOutShort != "" && backendsNotTimedOut > 1 {
 		// Only use addressToTimeOutShort if there is another available backend.
 		addressToTimeOut = addressToTimeOutShort
 	} else {

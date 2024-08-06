@@ -160,7 +160,7 @@ func (c *Client) loop() {
 		}
 
 		ioInflight = 0
-		c.durationSinceResponse.Store(-1)
+		c.durationSinceResponse.Store(-1) // Indicate successful timeout to the upper layer.
 	}
 
 	for {
@@ -169,6 +169,10 @@ func (c *Client) loop() {
 			return
 		case <-ticker.C:
 			// Keep the upper layer informed of outstanding I/O times.
+			if c.durationSinceResponse.Load() < 0 {
+				// We have already been asked to time out.
+				continue
+			}
 			if lastIOTime.IsZero() {
 				c.durationSinceResponse.Store(0)
 			} else {
