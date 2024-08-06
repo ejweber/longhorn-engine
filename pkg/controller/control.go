@@ -1431,34 +1431,44 @@ func (c *Controller) monitorBackendTimeouts(shortTimeout, longTimeout time.Durat
 		addressToTimeOut := ""
 		for {
 			<-ticker.C
-			c.checkBackendTimeouts(shortTimeout, longTimeout, addressToTimeOut)
+			addressToTimeOut = c.checkBackendTimeouts(shortTimeout, longTimeout, addressToTimeOut)
 		}
 	}()
 }
 
-// checkBackendTimeouts is a separate function for lock safety.
-func (c *Controller) checkBackendTimeouts(shortTimeout, longTimeout time.Duration, addressToTimeOut string) {
+// checkBackendTimeouts is a separate function for lock safety. Return whatever address we attempt to time out so we
+// can remember next time.
+func (c *Controller) checkBackendTimeouts(shortTimeout, longTimeout time.Duration, addressToTimeOut string) string {
 	c.RLock()
 	defer c.RUnlock()
 
 	if backend := c.backend.backends[addressToTimeOut]; backend.mode == types.RW {
 		// The last backend we tried to stop via timeout is still not ERR. Don't try another one yet.
 		// TODO: We could speed this up by checking for durationSinceResponce < 0 instead.
-		return
+		return addressToTimeOut
 	}
 
-	addressToTimeOut = ""
+	addressToTimeOutLong := ""
+	addressToTimeOutShort := ""
+	rwBackendCount := 0
 	for address, backend := range c.backend.backends {
 		if backend.mode == types.RW {
-			if backend.backend.GetDurationSinceResponse() > longTimeout && addressToTimeOut == "" {
-				addressToTimeOut = address
+			rwBackendCount += 1
+			if backend.backend.GetDurationSinceResponse() > longTimeout && addressToTimeOutLong == "" {
+				addressToTimeOutLong = address
 			} else if backend.backend.GetDurationSinceResponse() > shortTimeout {
-				addressToTimeOut = address
+				addressToTimeOutShort = address
 			}
 		}
 	}
-	if addressToTimeOut == "" {
-		return
+	if addressToTimeOutLong != "" {
+		addressToTimeOut = addressToTimeOutLong
+	} else if addressToTimeOutShort != "" && rwBackendCount > 1 {
+		// Only use addressToTimeOutShort if there is another available backend.
+		addressToTimeOut = addressToTimeOutShort
+	} else {
+		// No backends need to be timed out.
+		return ""
 	}
 
 	select {
@@ -1466,4 +1476,5 @@ func (c *Controller) checkBackendTimeouts(shortTimeout, longTimeout time.Duratio
 	default:
 		// We don't want to block if we already sent on the last loop.
 	}
+	return addressToTimeOut
 }
