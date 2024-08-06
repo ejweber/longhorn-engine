@@ -29,10 +29,10 @@ type Client struct {
 	peerAddr  string
 
 	// The dataconn client tracks the amount of time since the last successful I/O operation, but it is up to the upper
-	// layer to determine whether a timeoutChan has occured as a result. This sharing of responsibilty allows:
+	// layer to determine whether a timeout has occured as a result. This sharing of responsibilty allows:
 	// - The dataconn client to handle its own in-flight I/O, and
-	// - The upper layer to dynamically decide on an "acceptable" timeoutChan (based on the status of the other
-	//   available replicas.)
+	// - The upper layer to dynamically decide on an "acceptable" timeout (based on the status of the other available
+	//   replicas.)
 	timeoutChan           chan struct{}
 	durationSinceResponse *atomic.Int64
 }
@@ -143,9 +143,12 @@ func (c *Client) GetDurationSinceResponseShared() *atomic.Int64 {
 
 func (c *Client) loop() {
 	defer close(c.send)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
 
 	var clientError error
 	var ioInflight int
+	lastIOTime := time.Time{}
 
 	// handleClientError cleans up all in flight messages
 	// also stores the error so that future requests/responses get errored immediately.
@@ -163,7 +166,15 @@ func (c *Client) loop() {
 		select {
 		case <-c.end:
 			return
+		case <-ticker.C:
+			// Keep the upper layer informed of outstanding I/O times.
+			if lastIOTime.IsZero() {
+				c.durationSinceResponse.Store(0)
+			} else {
+				c.durationSinceResponse.Store(int64(time.Since(lastIOTime)))
+			}
 		case <-c.timeoutChan:
+			// Only time out when instructed by the upper layer.
 			logrus.Errorf("R/W Timeout. No response received in %v", time.Duration(c.durationSinceResponse.Load()))
 			handleClientError(ErrRWTimeout)
 			journal.PrintLimited(1000)
@@ -175,8 +186,7 @@ func (c *Client) loop() {
 
 			if req.Type == TypeRead || req.Type == TypeWrite || req.Type == TypeUnmap {
 				if ioInflight == 0 {
-					// >= 0 means we are waiting on an I/O operation to complete.
-					c.durationSinceResponse.Store(0)
+					lastIOTime = time.Now()
 				}
 				ioInflight++
 			}
@@ -197,11 +207,9 @@ func (c *Client) loop() {
 			if req.Type == TypeRead || req.Type == TypeWrite || req.Type == TypeUnmap {
 				ioInflight--
 				if ioInflight > 0 {
-					// >= 0 means we are waiting on an I/O operation to complete.
-					c.durationSinceResponse.Store(0)
+					lastIOTime = time.Now()
 				} else if ioInflight == 0 {
-					// < 0 means we are not waiting on an I/O operation to complete.
-					c.durationSinceResponse.Store(-1)
+					lastIOTime = time.Time{}
 				}
 			}
 

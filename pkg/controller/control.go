@@ -1423,9 +1423,10 @@ func attemptBindMountFilesystem(sourcePoint, mountPoint string, mounter mount.In
 }
 
 func (c *Controller) monitorBackendTimeouts(shortTimeout, longTimeout time.Duration) {
-	// TODO: How do we stop this?
-	ticker := time.NewTicker(1 * time.Second)
 	go func() {
+		// TODO: Do we need to stop this?
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 		// Remember addressToTimeOut so we keep considering the same one until successful.
 		addressToTimeOut := ""
 		for {
