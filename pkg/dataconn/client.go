@@ -38,7 +38,7 @@ type Client struct {
 }
 
 // NewClient replica client
-func NewClient(conns []net.Conn, engineToReplicaTimeout time.Duration) *Client {
+func NewClient(conns []net.Conn) *Client {
 	var wires []*Wire
 	for _, conn := range conns {
 		wires = append(wires, NewWire(conn))
