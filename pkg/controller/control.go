@@ -1442,6 +1442,12 @@ func (c *Controller) checkBackendTimeouts(shortTimeout, longTimeout time.Duratio
 	c.RLock()
 	defer c.RUnlock()
 
+	// TODO: Continue to investigate why timeouts in a real world test result in:
+	// -> Timeout 1 in 8 seconds.
+	// -> Timeout 2 in 8 seconds after that.
+	// -> Timeout 3 never.
+	// The logic error is likely in this function.
+
 	if backend, ok := c.backend.backends[addressToTimeOut]; ok && backend.backend.GetDurationSinceResponse() >= 0 {
 		// The last backend we tried to stop via timeout hasn't acknowledged it. Don't try another one yet.
 		return addressToTimeOut
@@ -1452,7 +1458,7 @@ func (c *Controller) checkBackendTimeouts(shortTimeout, longTimeout time.Duratio
 	backendsNotTimedOut := 0
 	for address, backend := range c.backend.backends {
 		durationSinceResponse := backend.backend.GetDurationSinceResponse()
-		if durationSinceResponse < 0 {
+		if durationSinceResponse < 0 || backend.mode != types.RW {
 			// This backend has acknowledged our request to time out.
 			// It would look cleaner to check for ERR versus RW mode here, but a backend won't actually transition to
 			// ERR until the completion of at least one I/O operation. If, for example, all three backends for an
