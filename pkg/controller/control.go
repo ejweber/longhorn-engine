@@ -69,12 +69,12 @@ type Controller struct {
 
 const (
 	lastModifyCheckPeriod = 5 * time.Second
-
-	experimentalLongEngineToReplicaTimeout = 16 * time.Second
 )
 
-func NewController(name string, factory types.BackendFactory, frontend types.Frontend, isUpgrade, disableRevCounter, salvageRequested, unmapMarkSnapChainRemoved bool,
-	iscsiTargetRequestTimeout, engineReplicaTimeout time.Duration, dataServerProtocol types.DataServerProtocol, fileSyncHTTPClientTimeout, snapshotMaxCount int, snapshotMaxSize int64) *Controller {
+func NewController(name string, factory types.BackendFactory, frontend types.Frontend, isUpgrade, disableRevCounter,
+	salvageRequested, unmapMarkSnapChainRemoved bool, iscsiTargetRequestTimeout, shortEngineReplicaTimeout,
+	longEngineReplicaTimeout time.Duration, dataServerProtocol types.DataServerProtocol, fileSyncHTTPClientTimeout,
+	snapshotMaxCount int, snapshotMaxSize int64) *Controller {
 	c := &Controller{
 		factory:       factory,
 		VolumeName:    name,
@@ -96,7 +96,7 @@ func NewController(name string, factory types.BackendFactory, frontend types.Fro
 	}
 	c.reset()
 	c.metricsStart()
-	c.monitorBackendTimeouts(engineReplicaTimeout, experimentalLongEngineToReplicaTimeout)
+	c.monitorBackendTimeouts(shortEngineReplicaTimeout, longEngineReplicaTimeout)
 	return c
 }
 

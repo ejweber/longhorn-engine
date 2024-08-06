@@ -21,6 +21,11 @@ import (
 	"github.com/longhorn/longhorn-engine/pkg/util"
 )
 
+const (
+	// TODO: Make this configurable, remove it, etc.
+	experimentalLongEngineToReplicaTimeout = 16 * time.Second
+)
+
 func ControllerCmd() cli.Command {
 	return cli.Command{
 		Name: "controller",
@@ -145,7 +150,7 @@ func startController(c *cli.Context) error {
 	timeout := c.Int64("engine-replica-timeout")
 	engineReplicaTimeout := time.Duration(timeout) * time.Second
 	engineReplicaTimeout = controller.DetermineEngineReplicaTimeout(engineReplicaTimeout)
-	iscsiTargetRequestTimeout := controller.DetermineIscsiTargetRequestTimeout(engineReplicaTimeout)
+	iscsiTargetRequestTimeout := controller.DetermineIscsiTargetRequestTimeout(experimentalLongEngineToReplicaTimeout)
 
 	snapshotMaxCount := c.Int("snapshot-max-count")
 	snapshotMaxSize := int64(0)
@@ -188,9 +193,10 @@ func startController(c *cli.Context) error {
 
 	logrus.Infof("Creating volume %v controller with iSCSI target request timeout %v and engine to replica(s) timeout %v",
 		volumeName, iscsiTargetRequestTimeout, engineReplicaTimeout)
-	control := controller.NewController(volumeName, dynamic.New(factories), frontend, isUpgrade, disableRevCounter, salvageRequested,
-		unmapMarkSnapChainRemoved, iscsiTargetRequestTimeout, engineReplicaTimeout, types.DataServerProtocol(dataServerProtocol),
-		fileSyncHTTPClientTimeout, snapshotMaxCount, snapshotMaxSize)
+	control := controller.NewController(volumeName, dynamic.New(factories), frontend, isUpgrade, disableRevCounter,
+		salvageRequested, unmapMarkSnapChainRemoved, iscsiTargetRequestTimeout, engineReplicaTimeout,
+		experimentalLongEngineToReplicaTimeout, types.DataServerProtocol(dataServerProtocol), fileSyncHTTPClientTimeout,
+		snapshotMaxCount, snapshotMaxSize)
 
 	// need to wait for Shutdown() completion
 	control.ShutdownWG.Add(1)

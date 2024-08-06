@@ -52,7 +52,8 @@ func NewClient(conns []net.Conn) *Client {
 		responses: make(chan *Message, 1024),
 		messages:  map[uint32]*Message{},
 
-		timeoutChan:           make(chan struct{}),
+		// timeoutChan has a single buffer slot. The uppper layer can take advantage of this to do a non-blocking send.
+		timeoutChan:           make(chan struct{}, 1),
 		durationSinceResponse: &atomic.Int64{},
 	}
 	go c.loop()
